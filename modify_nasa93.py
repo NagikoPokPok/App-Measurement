@@ -3,7 +3,7 @@ import pandas as pd
 def convert_nasa93_with_named_columns():
     # Bước 1: Đọc và xử lý file cost_drivers.xlsx
     cost_drivers_df = pd.read_excel(
-        "cost_drivers.xlsx", 
+        "dataset/cost_drivers.xlsx", 
         sheet_name="cost driver of COCOMO 1",  # Đọc sheet "cost driver of COCOMO 1"
         header=0 # Dòng đầu tiên chứa tên cột
     )
@@ -60,7 +60,7 @@ def convert_nasa93_with_named_columns():
         '''
 
     # Bước 2: Đọc file nasa93.xlsx
-    nasa93_df = pd.read_excel("nasa93.xlsx", sheet_name="nasa93")
+    nasa93_df = pd.read_excel("dataset/nasa93.xlsx", sheet_name="nasa93")
 
     # Danh sách tên cột cần chuyển đổi (từ 'rely' đến 'sced')
     columns_to_convert = [
@@ -92,7 +92,7 @@ def convert_nasa93_with_named_columns():
         )
 
     # Bước 4: Xuất file mới
-    output_path = "nasa93_converted.xlsx"
+    output_path = "dataset/nasa93_converted.xlsx"
     nasa93_df.to_excel(output_path, index=False) 
     print(f"Chuyển đổi hoàn tất! File đã được lưu tại: {output_path}")
 

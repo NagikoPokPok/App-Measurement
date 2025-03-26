@@ -11,7 +11,7 @@ import seaborn as sns
 
 # 1. Đọc dữ liệu
 print("Bước 1: Đọc dữ liệu")
-data = pd.read_csv('software_effort_data.csv', sep=',')
+data = pd.read_csv('dataset/software_effort_data.csv', sep=',')
 print(f"Số lượng mẫu: {data.shape[0]}")
 print(f"Các đặc trưng: {', '.join(data.columns)}")
 print("\nThống kê mô tả dữ liệu:")
