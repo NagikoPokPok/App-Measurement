@@ -224,14 +224,6 @@ plt.ylabel('R² Score')
 plt.title('R² Comparison Across Models')
 plt.xticks(rotation=45)
 
-# 7.5 Feature importance (additional plot)
-plt.figure(figsize=(12, 6))
-top_features = feature_importance.head(10)
-plt.barh(top_features['Feature'], top_features['Importance'])
-plt.xlabel('Importance')
-plt.title('Top 10 Feature Importance from Random Forest')
-plt.tight_layout()
-
 # Save visualizations
 plt.figure(1)
 plt.tight_layout()
