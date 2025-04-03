@@ -229,10 +229,6 @@ plt.figure(1)
 plt.tight_layout()
 plt.savefig('cocomo_effort_prediction_results.png')
 
-plt.figure(2)
-plt.tight_layout()
-plt.savefig('feature_importance.png')
-
 # 8. Find best model and provide conclusions
 print("\nStep 8: Conclusions and recommendations")
 best_model = min(results, key=lambda x: results[x]['rmse'])
