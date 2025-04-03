@@ -133,7 +133,7 @@ def calculate_cocomo_effort(row):
             em *= row[driver]
     
     # Calculate COCOMO effort: E = a × (KLOC)^b × EM
-    kloc = row['loc'] / 1000  # Convert LOC to KLOC
+    kloc = row['loc'] 
     effort = a * (kloc ** b) * em
     
     return effort
