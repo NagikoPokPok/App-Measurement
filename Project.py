@@ -47,12 +47,31 @@ if missing_values.sum() > 0:
 else:
     print("No missing values found")
 
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
 # 2.3 Chuẩn hóa dữ liệu
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
+
+# Chuyển kết quả chuẩn hóa thành DataFrame có tên cột
 X_scaled_df = pd.DataFrame(X_scaled, columns=X.columns)
+
+# Tạo DataFrame hiển thị mean và std của từng cột
+stats_df = pd.DataFrame({
+    "Feature": X.columns,
+    "Mean": scaler.mean_,
+    "Standard Deviation": scaler.scale_
+})
+
+# In bảng Mean và Std Dev với tên cột
+print("\nMean and Standard Deviation for each feature:")
+print(stats_df.to_string(index=False))  # Không hiển thị index
+
+# In dữ liệu đã chuẩn hóa (5 dòng đầu)
 print("\nNormalized data (first 5 rows):")
 print(X_scaled_df.head())
+
 
 # 3. Chia dữ liệu thành tập huấn luyện và tập kiểm tra
 print("\nStep 3: Splitting data into training and testing sets")
@@ -114,7 +133,7 @@ def calculate_cocomo_effort(row):
             em *= row[driver]
     
     # Calculate COCOMO effort: E = a × (KLOC)^b × EM
-    kloc = row['loc'] / 1000  # Convert LOC to KLOC
+    kloc = row['loc'] 
     effort = a * (kloc ** b) * em
     
     return effort
@@ -133,6 +152,7 @@ print("\nStep 6: Making predictions and evaluating models")
 lr_pred = lr_model.predict(X_test)
 dt_pred = dt_model.predict(X_test)
 rf_pred = rf_model.predict(X_test)
+
 
 # Evaluation function
 def evaluate_model(y_true, y_pred, model_name):
@@ -153,6 +173,18 @@ results['COCOMO I'] = evaluate_model(y_test, cocomo_pred, "COCOMO I")
 results['Linear Regression'] = evaluate_model(y_test, lr_pred, "Linear Regression")
 results['Decision Tree'] = evaluate_model(y_test, dt_pred, "Decision Tree")
 results['Random Forest'] = evaluate_model(y_test, rf_pred, "Random Forest")
+
+
+
+results_df = pd.DataFrame({
+    'Actual': y_test,
+    'COCOMO': cocomo_pred,
+    'Linear Regression': lr_pred,
+    'Decision Tree': dt_pred,
+    'Random Forest': rf_pred
+})
+print("Dự đoán nỗ lực cho 10 mẫu thử đầu tiên (tính bằng tháng-người):")
+print(results_df.head(10))
 
 # 7. Visualize results
 print("\nStep 7: Visualizing results")
@@ -228,6 +260,10 @@ plt.xticks(rotation=45)
 plt.figure(1)
 plt.tight_layout()
 plt.savefig('cocomo_effort_prediction_results.png')
+
+plt.figure(2)
+plt.tight_layout()
+plt.savefig('feature_importance.png')
 
 # 8. Find best model and provide conclusions
 print("\nStep 8: Conclusions and recommendations")
