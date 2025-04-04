@@ -153,6 +153,7 @@ lr_pred = lr_model.predict(X_test)
 dt_pred = dt_model.predict(X_test)
 rf_pred = rf_model.predict(X_test)
 
+
 # Evaluation function
 def evaluate_model(y_true, y_pred, model_name):
     mae = mean_absolute_error(y_true, y_pred)
