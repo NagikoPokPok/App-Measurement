@@ -39,43 +39,44 @@ y = data['actual']  # Actual effort is the target variable
 missing_values = X.isnull().sum()
 print(f"Missing values in each feature:\n{missing_values}")
 
-# Remove rows with missing values if any
-if missing_values.sum() > 0:
-    X = X.dropna()
-    y = y[X.index]
-    print(f"Number of samples after handling missing values: {X.shape[0]}")
-else:
-    print("No missing values found")
+# Handle missing values like in Project_2.py
+for col in X.columns:
+    if X[col].dtype == 'object':  # Categorical data
+        fill_value = X[col].mode()[0]
+    else:  # Numerical data
+        fill_value = X[col].median()
+    X[col].fillna(fill_value, inplace=True)
 
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
+print(f"Number of samples after handling missing values: {X.shape[0]}")
 
 # 2.3 Chuẩn hóa dữ liệu
+print("\nStep 2.3: Feature scaling")
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+# Lưu trữ các cột cần chuẩn hóa
+numeric_features = X.select_dtypes(include=['float64', 'int64']).columns
+# Tạo bản sao để giữ lại phiên bản chưa chuẩn hóa
+X_unscaled = X.copy()
+# Chuẩn hóa dữ liệu
+X[numeric_features] = scaler.fit_transform(X[numeric_features])
+y_log = np.log1p(y)
 
-# Chuyển kết quả chuẩn hóa thành DataFrame có tên cột
-X_scaled_df = pd.DataFrame(X_scaled, columns=X.columns)
-
-# Tạo DataFrame hiển thị mean và std của từng cột
+# Hiển thị thông tin chuẩn hóa
 stats_df = pd.DataFrame({
-    "Feature": X.columns,
+    "Feature": numeric_features,
     "Mean": scaler.mean_,
     "Standard Deviation": scaler.scale_
 })
 
-# In bảng Mean và Std Dev với tên cột
 print("\nMean and Standard Deviation for each feature:")
-print(stats_df.to_string(index=False))  # Không hiển thị index
+print(stats_df.to_string(index=False))
 
 # In dữ liệu đã chuẩn hóa (5 dòng đầu)
 print("\nNormalized data (first 5 rows):")
-print(X_scaled_df.head())
-
+print(X.head())
 
 # 3. Chia dữ liệu thành tập huấn luyện và tập kiểm tra
 print("\nStep 3: Splitting data into training and testing sets")
-X_train, X_test, y_train, y_test = train_test_split(X_scaled_df, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y_log, test_size=0.2, random_state=42)
 print(f"Training samples: {X_train.shape[0]}")
 print(f"Testing samples: {X_test.shape[0]}")
 
@@ -136,9 +137,9 @@ def calculate_cocomo_effort(row):
     kloc = row['loc'] 
     effort = a * (kloc ** b) * em
     
-    return effort
+    return np.log1p(effort)
 
-# Apply COCOMO calculation
+# Apply COCOMO calculation - sử dụng data gốc như trước
 data['effort_cocomo'] = data.apply(calculate_cocomo_effort, axis=1)
 
 # Get predictions for test set
@@ -148,11 +149,10 @@ cocomo_pred = data.loc[test_indices, 'effort_cocomo'].values
 # 6. Make predictions and evaluate models
 print("\nStep 6: Making predictions and evaluating models")
 
-# Predictions from ML models
+# Predictions from ML models - sử dụng dữ liệu đã chuẩn hóa
 lr_pred = lr_model.predict(X_test)
 dt_pred = dt_model.predict(X_test)
 rf_pred = rf_model.predict(X_test)
-
 
 # Evaluation function
 def evaluate_model(y_true, y_pred, model_name):
@@ -174,8 +174,6 @@ results['Linear Regression'] = evaluate_model(y_test, lr_pred, "Linear Regressio
 results['Decision Tree'] = evaluate_model(y_test, dt_pred, "Decision Tree")
 results['Random Forest'] = evaluate_model(y_test, rf_pred, "Random Forest")
 
-
-
 results_df = pd.DataFrame({
     'Actual': y_test,
     'COCOMO': cocomo_pred,
@@ -191,7 +189,6 @@ print("\nStep 7: Visualizing results")
 
 plt.figure(figsize=(16, 14))
 
-
 # 7.1 Scatter plot comparing actual vs predicted values
 plt.subplot(2, 2, 1)
 plt.scatter(y_test, cocomo_pred, label='COCOMO I', alpha=0.5, color='blue')
@@ -203,6 +200,7 @@ plt.xlabel('Actual Effort (person-months)')
 plt.ylabel('Predicted Effort (person-months)')
 plt.title('Actual vs Predicted Effort')
 plt.legend()
+plt.grid(True)
 
 # 7.2 Compare errors across models
 plt.subplot(2, 2, 2)
@@ -219,6 +217,7 @@ plt.xticks(x, models, rotation=45)
 plt.ylabel('Error (person-months)')
 plt.title('MAE and RMSE Comparison Across Models')
 plt.legend()
+plt.grid(True)
 
 # 7.3 R² comparison
 plt.subplot(2, 2, 3)
@@ -227,6 +226,8 @@ plt.bar(models, r2_values, color='lightgreen')
 plt.ylabel('R² Score')
 plt.title('R² Comparison Across Models')
 plt.xticks(rotation=45)
+plt.axhline(y=0, color='r', linestyle='-')
+plt.grid(True)
 
 # Save visualizations
 plt.figure(1)
