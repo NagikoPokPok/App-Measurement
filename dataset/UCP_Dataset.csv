@@ -1,0 +1,72 @@
+﻿Project_No,Simple Actors,Average Actors,Complex Actors,UAW,Simple UC,Average UC,Complex UC,UUCW,TCF,ECF,Real_P20,Real_Effort_Person_Hours,Language,Methodology,ApplicationType
+1,1,1,2,9,6,10,15,355,0.81,0.84,398.5,7970,Java,,
+2,1,2,1,8,4,20,15,445,0.99,0.99,398.1,7962,,,
+3,0,0,3,9,1,5,20,355,1.03,0.8,396.75,7935,C#,,Business Application
+4,0,1,2,8,5,10,15,350,0.9,0.91,390.25,7805,C++,,Real-Time application
+5,1,2,1,8,1,10,16,345,0.9,0.91,387.9,7758,,Waterfall,Real-Time Application
+6,2,0,2,8,1,13,14,345,0.99,0.99,382.15,7643,Java,Personal Software Process (PSP),Business Application
+7,0,2,1,7,3,18,15,420,0.94,1.02,376.6,7532,Java,Rapid Application Development,Business Application
+8,0,1,2,8,0,16,12,340,1.03,0.8,372.55,7451,C,,Business Application
+9,,1,2,8,2,10,15,335,0.94,1.02,372.45,7449,C#,,Business Application
+10,4,0,1,7,4,14,17,415,1.025,0.98,371.35,7427,Java,,
+11,1,2,1,8,5,16,10,335,0.92,0.78,370.3,7406,C#,,Business Application
+12,0,1,2,8,1,10,15,330,0.85,0.89,368.25,7365,CSP,,Business Application
+13,1,0,2,7,9,8,19,410,0.75,0.81,367.5,7350,C#,,Business Application
+14,1,0,2,7,5,8,20,405,1.02,1.085,365.15,7303,C#,Unified Process and its variants,Business Application
+15,0,1,2,8,2,15,11,325,1.095,0.95,362.6,7252,C++,,
+16,0,1,2,8,1,8,16,325,0.92,0.78,362.25,7245,C#,Waterfall,
+17,0,2,1,7,2,15,16,400,0.75,0.81,358.3,7166,.Net,,Business Application
+18,2,1,1,7,5,11,17,390,0.965,0.755,355.95,7119,C#,,Mathematically-Intensive Application
+19,0,1,2,8,3,9,14,315,0.92,0.78,355.55,7111,C++,,Mathematically-Intensive Application
+20,4,2,0,8,2,14,11,315,1.05,0.95,352.2,7044,,,
+21,1,0,2,7,5,14,15,390,0.71,0.73,352,7040,Java,,Business Application
+22,2,1,1,7,3,23,10,395,1.02,1.085,351.4,7028,C#,Waterfall,Business Application
+23,0,1,2,8,1,16,10,315,1.03,0.8,347.1,6942,XML,,Business Application
+24,1,0,2,7,1,15,10,305,0.965,0.755,340.7,6814,,Waterfall,Mathematically-Intensive Application
+25,0,0,3,9,2,19,12,380,0.78,0.79,340.45,6809,C#,,Business Application
+26,0,1,2,8,2,20,11,375,0.98,0.97,340.1,6802,C#,Waterfall,
+27,1,1,3,12,0,14,11,305,0.78,0.51,339.35,6787,,,
+28,1,0,2,7,1,9,14,305,1.08,0.77,338.2,6764,,,
+29,0,2,1,7,4,15,14,380,1.05,0.95,338.05,6761,SQL,,Business Application
+30,0,2,1,7,0,15,10,300,0.85,0.89,336.25,6725,,Waterfall,Real-Time Application
+31,1,0,2,7,1,16,9,300,1.02,1.085,334.5,6690,,,
+32,0,2,1,7,0,18,8,300,1.08,0.77,330,6600,Oracle,Multifunctional Teams,Business Application
+33,2,1,1,7,0,17,8,290,0.94,1.02,323.7,6474,Visual Basic,,
+34,0,0,2,6,0,13,15,355,0.95,0.92,321.65,6433,C#,,Infrastructure Software
+35,1,0,2,7,1,13,10,285,0.78,0.79,320.8,6416,C#,,Business Application
+36,0,1,2,8,0,14,10,290,0.94,1.02,320.6,6412,C#,Incremental,
+37,0,0,2,6,4,20,9,355,0.9,0.94,320,6400,Visual Basic,Waterfall,Business Application
+38,1,0,2,7,1,10,12,285,0.71,0.73,318,6360,C#,,
+39,0,0,2,6,0,13,15,355,0.9,0.91,316.85,6337,Visual Basic,,
+40,2,2,4,18,1,20,27,610,0.72,0.67,312,6240,,,Business Application
+41,1,0,2,7,1,11,11,280,0.78,0.51,311.6,6232,C#,,Business Application
+42,1,0,2,7,1,14,9,280,1.03,0.8,308.65,6173,DELPHI,Rapid Application Development (RAD),Business Application
+43,0,0,2,6,0,12,15,345,1,0.92,308,6160,Visual Basic,Waterfall,Business Application
+44,0,0,2,6,2,15,12,340,1.095,0.95,305.85,6117,C#,,Business Application
+45,2,1,1,7,2,13,9,275,0.75,0.81,303.1,6062,Visual Basic,Waterfall,Business Application
+46,0,2,5,19,1,27,15,500,1.03,0.8,302.55,6051,C#,,Business Application
+47,1,1,5,18,3,26,15,500,0.72,0.67,302.4,6048,ASP,,Business Application
+48,0,3,4,18,2,19,20,500,0.85,0.89,301.75,6035,,,Business Application
+49,0,0,2,6,1,19,5,270,0.965,0.755,301.2,6024,C#,,
+50,0,0,6,18,20,25,9,485,0.85,0.88,301.15,6023,PowerBuilder,,Business Application
+51,2,2,4,18,5,25,20,575,1.118,0.995,299.65,5993,C#,Waterfall,
+52,1,1,5,18,4,16,21,495,0.85,0.88,299.25,5985,C#,,Business Application
+53,0,3,4,18,5,21,17,490,0.75,0.81,298.55,5971,C#,,Business Application
+54,1,1,5,18,5,21,17,490,0.81,0.84,298.1,5962,Java,,Business Application
+55,1,1,5,18,6,16,20,490,0.85,0.89,297.2,5944,,,
+56,0,1,5,17,5,25,20,575,0.85,0.88,297,5940,,Waterfall,
+57,0,0,2,6,0,14,8,260,0.98,0.97,296.35,5927,C#,,Business Application
+58,0,1,5,17,3,18,19,480,0.85,0.89,294.25,5885,Java,Waterfall,Business Application
+59,1,1,5,18,5,16,20,485,1.08,0.77,294.1,5882,Java,,Business Application
+60,0,0,2,6,1,14,12,325,0.72,0.67,294,5880,,,
+61,2,2,4,18,3,26,14,485,0.82,0.79,294,5880,C#,,Business Application
+62,1,1,1,6,1,10,15,330,0.96,0.96,293.8,5876,C++,,Business Application
+63,0,0,2,6,0,3,20,330,0.85,0.89,293.65,5873,C#,Multifunctional Teams,Business Application
+64,1,1,5,18,3,17,20,485,1.095,0.95,293.25,5865,,,
+65,0,0,6,18,2,17,20,480,0.965,0.755,293.15,5863,Visual Basic,,
+66,1,1,5,18,3,21,17,480,0.98,0.97,292.8,5856,,Waterfall,Mathematically-Intensive Application
+67,0,3,4,18,2,18,18,460,1.05,0.95,290,5800,SQL,,Business Application
+68,1,2,4,17,1,23,22,565,1.03,0.8,289.55,5791,C,,Real-Time Application
+69,0,2,5,19,5,30,10,475,0.95,0.92,289.1,5782,C#,,Business Application
+70,0,0,2,6,5,15,5,250,1,0.92,288.9,5778,C#,Waterfall,Business Application
+71,2,2,4,18,5,18,17,460,0.85,0.89,288.75,5775,Java,Waterfall,Business Application

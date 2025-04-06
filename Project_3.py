@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # 1. Load and explore the NASA93 dataset
-nasa93 = pd.read_csv('nasa93.arff.csv', sep=';')
+nasa93 = pd.read_csv('dataset/nasa93.arff.csv', sep=';')
 print(f"Number of samples: {nasa93.shape[0]}")
 print(f"Features: {', '.join(nasa93.columns)}")
 
@@ -208,18 +208,9 @@ plt.xticks(rotation=45)
 plt.axhline(y=0, color='r', linestyle='-')
 plt.grid(True)
 
-# 7.4 Original vs Log scale for actual effort
-plt.subplot(2, 2, 4)
-plt.hist(data['act_effort'], bins=20, alpha=0.5, label='Original scale')
-plt.hist(y_log, bins=20, alpha=0.5, label='Log scale')
-plt.xlabel('Effort (person-months)')
-plt.ylabel('Frequency')
-plt.title('Distribution of Effort: Original vs Log scale')
-plt.legend()
-plt.grid(True)
 
 plt.tight_layout()
-plt.savefig('nasa93_effort_prediction_results_improved.png')
+plt.savefig('img/nasa93_effort_prediction_results_improved.png')
 
 # 8. Find best model and provide conclusions
 best_model = max(results.items(), key=lambda x: x[1]['R²'])[0]

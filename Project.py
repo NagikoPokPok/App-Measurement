@@ -11,7 +11,7 @@ import seaborn as sns
 
 # 1. Tải dữ liệu
 print("Step 1: Loading data")
-data = pd.read_csv('COCOMO-81.csv', sep=',')
+data = pd.read_csv('dataset/COCOMO-81.csv', sep=',')
 print(f"Number of samples: {data.shape[0]}")
 print(f"Features: {', '.join(data.columns)}")
 print("\nDescriptive statistics:")
@@ -191,37 +191,9 @@ print("\nStep 7: Visualizing results")
 
 plt.figure(figsize=(16, 14))
 
-# 7.1 Actual vs predicted effort comparison for selected samples
+
+# 7.1 Scatter plot comparing actual vs predicted values
 plt.subplot(2, 2, 1)
-sample_size = min(10, len(y_test))
-sample_indices = range(sample_size)
-
-# Create DataFrame for predicted and actual values
-comparison_data = pd.DataFrame({
-    'Actual': y_test.iloc[:sample_size].values,
-    'COCOMO I': cocomo_pred[:sample_size],
-    'Linear Regression': lr_pred[:sample_size],
-    'Decision Tree': dt_pred[:sample_size],
-    'Random Forest': rf_pred[:sample_size]
-})
-
-# Plot bar chart for each sample
-x = np.arange(sample_size)
-width = 0.15
-plt.bar(x - 2*width, comparison_data['Actual'], width, label='Actual', color='gray')
-plt.bar(x - width, comparison_data['COCOMO I'], width, label='COCOMO I', color='blue')
-plt.bar(x, comparison_data['Linear Regression'], width, label='Linear Regression', color='red')
-plt.bar(x + width, comparison_data['Decision Tree'], width, label='Decision Tree', color='green')
-plt.bar(x + 2*width, comparison_data['Random Forest'], width, label='Random Forest', color='purple')
-
-plt.xlabel('Sample')
-plt.ylabel('Effort (person-months)')
-plt.title('Actual vs Predicted Effort (First 10 Samples)')
-plt.xticks(x, [f'Sample {i+1}' for i in range(sample_size)], rotation=45)
-plt.legend()
-
-# 7.2 Scatter plot comparing actual vs predicted values
-plt.subplot(2, 2, 2)
 plt.scatter(y_test, cocomo_pred, label='COCOMO I', alpha=0.5, color='blue')
 plt.scatter(y_test, lr_pred, label='Linear Regression', alpha=0.5, color='red')
 plt.scatter(y_test, dt_pred, label='Decision Tree', alpha=0.5, color='green')
@@ -232,8 +204,8 @@ plt.ylabel('Predicted Effort (person-months)')
 plt.title('Actual vs Predicted Effort')
 plt.legend()
 
-# 7.3 Compare errors across models
-plt.subplot(2, 2, 3)
+# 7.2 Compare errors across models
+plt.subplot(2, 2, 2)
 models = list(results.keys())
 mae_values = [results[model]['mae'] for model in models]
 rmse_values = [results[model]['rmse'] for model in models]
@@ -248,8 +220,8 @@ plt.ylabel('Error (person-months)')
 plt.title('MAE and RMSE Comparison Across Models')
 plt.legend()
 
-# 7.4 R² comparison
-plt.subplot(2, 2, 4)
+# 7.3 R² comparison
+plt.subplot(2, 2, 3)
 r2_values = [results[model]['r2'] for model in models]
 plt.bar(models, r2_values, color='lightgreen')
 plt.ylabel('R² Score')
@@ -259,11 +231,7 @@ plt.xticks(rotation=45)
 # Save visualizations
 plt.figure(1)
 plt.tight_layout()
-plt.savefig('cocomo_effort_prediction_results.png')
-
-plt.figure(2)
-plt.tight_layout()
-plt.savefig('feature_importance.png')
+plt.savefig('img/cocomo_effort_prediction_results.png')
 
 # 8. Find best model and provide conclusions
 print("\nStep 8: Conclusions and recommendations")
