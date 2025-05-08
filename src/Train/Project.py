@@ -8,10 +8,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import seaborn as sns
+import joblib
 
 # 1. Tải dữ liệu
 print("Step 1: Loading data")
-data = pd.read_csv('dataset/COCOMO-81.csv', sep=',')
+data = pd.read_csv('../../dataset/COCOMO-81.csv', sep=',')
 print(f"Number of samples: {data.shape[0]}")
 print(f"Features: {', '.join(data.columns)}")
 print("\nDescriptive statistics:")
@@ -115,7 +116,6 @@ def calculate_cocomo_effort(row):
         a, b = 3.0, 1.12
     elif 'mode_embedded' in row and row['mode_embedded'] == 1:
         a, b = 3.6, 1.20
-    # Fallback using dev_mode column if one-hot encoded columns are not available
     elif 'dev_mode' in row:
         if row['dev_mode'] == 'organic':
             a, b = 2.4, 1.05
@@ -139,7 +139,7 @@ def calculate_cocomo_effort(row):
     
     return np.log1p(effort)
 
-# Apply COCOMO calculation - sử dụng data gốc như trước
+# Apply COCOMO calculation
 data['effort_cocomo'] = data.apply(calculate_cocomo_effort, axis=1)
 
 # Get predictions for test set
@@ -149,7 +149,7 @@ cocomo_pred = data.loc[test_indices, 'effort_cocomo'].values
 # 6. Make predictions and evaluate models
 print("\nStep 6: Making predictions and evaluating models")
 
-# Predictions from ML models - sử dụng dữ liệu đã chuẩn hóa
+# Predictions from ML models
 lr_pred = lr_model.predict(X_test)
 dt_pred = dt_model.predict(X_test)
 rf_pred = rf_model.predict(X_test)
@@ -232,7 +232,7 @@ plt.grid(True)
 # Save visualizations
 plt.figure(1)
 plt.tight_layout()
-plt.savefig('img/cocomo_effort_prediction_results.png')
+plt.savefig('../../img/cocomo_effort_prediction_results.png')
 
 # 8. Find best model and provide conclusions
 print("\nStep 8: Conclusions and recommendations")
@@ -241,3 +241,20 @@ print(f"Best performing model based on RMSE: {best_model}")
 print(f"MAE: {results[best_model]['mae']:.2f}")
 print(f"RMSE: {results[best_model]['rmse']:.2f}")
 print(f"R²: {results[best_model]['r2']:.2f}")
+
+# Create a dictionary mapping model names to their objects
+model_objects = {
+    'COCOMO I': None,  # COCOMO không có model object
+    'Linear Regression': lr_model,
+    'Decision Tree': dt_model,
+    'Random Forest': rf_model
+}
+
+# Save the best model if it's not COCOMO
+if best_model != 'COCOMO I':
+    best_model_object = model_objects[best_model]
+    joblib.dump(best_model_object, 'trained_model.pkl')
+    joblib.dump(scaler, 'scaler.pkl')
+    print(f"Saved {best_model} model and scaler to disk")
+else:
+    print("COCOMO I was the best model but it doesn't need to be saved as it's a formula-based approach")
