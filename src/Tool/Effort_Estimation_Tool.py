@@ -29,6 +29,14 @@ def create_effort_input_form(method):
         input_data['stor'] = st.sidebar.number_input('Main Storage Constraint', min_value=0.0)
         input_data['virt'] = st.sidebar.number_input('Virtual Machine Volatility', min_value=0.0)
         input_data['turn'] = st.sidebar.number_input('Computer Turnaround Time', min_value=0.0)
+        input_data['acap'] = st.sidebar.number_input('Analyst Capability', min_value=0.0)
+        input_data['aexp'] = st.sidebar.number_input('Applications Experience', min_value=0.0)
+        input_data['pcap'] = st.sidebar.number_input('Programmer Capability', min_value=0.0)
+        input_data['vexp'] = st.sidebar.number_input('Virtual Machine Experience', min_value=0.0)
+        input_data['lexp'] = st.sidebar.number_input('Programming Language Experience', min_value=0.0)
+        input_data['modp'] = st.sidebar.number_input('Modern Programming Practices', min_value=0.0)
+        input_data['tool'] = st.sidebar.number_input('Use of Software Tools', min_value=0.0)
+        input_data['sced'] = st.sidebar.number_input('Required Development Schedule', min_value=0.0)
     
     elif method == 'FP':
         input_data['Simple Actors'] = st.sidebar.number_input('Simple Actors', min_value=0)
