@@ -10,7 +10,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import joblib
 
 # 1. Load and explore the China dataset
-china_data = pd.read_csv('../../dataset/china.csv')
+china_data = pd.read_csv('././dataset/china.csv')
 print(f"Number of samples: {china_data.shape[0]}")
 print(f"Features: {', '.join(china_data.columns)}")
 
@@ -142,7 +142,7 @@ plt.axhline(y=0, color='r', linestyle='-')
 plt.grid(True)
 
 plt.tight_layout()
-plt.savefig('../../img/china_effort_prediction_results.png')
+plt.savefig('././img/china_effort_prediction_results.png')
 
 # 8. Feature importance for the best ML model
 best_model = max(results.items(), key=lambda x: x[1]['R²'])[0]
@@ -152,5 +152,5 @@ print(f"RMSE: {results[best_model]['RMSE']:.2f}")
 print(f"R²: {results[best_model]['R²']:.2f}")
 
 best_model_object = models[best_model]  # Lấy object model tốt nhất
-joblib.dump(best_model_object, 'trained_model.pkl')
-joblib.dump(scaler, 'scaler.pkl') 
+joblib.dump(best_model_object, './src/model/trained_model_fp.pkl')
+joblib.dump(scaler, './src/scaler/scaler_fp.pkl') 
