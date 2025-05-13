@@ -212,7 +212,7 @@ def train_fp_model():
         print("No missing values found")
     
     # Select features and target variable
-    X = data.drop(['ID', 'Effort'], axis=1)  # Remove ID and target
+    X = data.drop(['ID', 'Effort', 'Added', 'Changed', 'Deleted', 'Resource', 'Dev.Type', 'Duration', 'N_effort'], axis=1)  # Remove ID and target
     y = data['Effort']  # The target variable is the actual effort
     
     # Check for features with zero variance (if any)

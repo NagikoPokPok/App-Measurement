@@ -79,6 +79,7 @@ if missing_files:
     for file in missing_files:
         st.write(f"- {file}")
     st.stop()
+
 # Load the trained models
 try:
     model_loc = joblib.load(MODEL_DIR / "trained_model_loc.pkl")
@@ -122,11 +123,12 @@ METHOD_INFO = {
     Function Points measure software size based on the functionality provided.
     
     ### Input Parameters:
-    - **Simple Actors**: Count of simple actors (weight: 1)
-    - **Average Actors**: Count of average actors (weight: 2)
-    - **Complex Actors**: Count of complex actors (weight: 3)
-    - **Technical Complexity Factor (TCF)**: Adjusts for technical complexity (0.6 to 1.4)
-    - **Environmental Complexity Factor (ECF)**: Adjusts for environmental factors (0.6 to 1.4)
+    - **Input**: Number of user inputs
+    - **Output**: Number of user outputs
+    - **Enquiry**: Number of user Enquiries
+    - **File**: Number of files
+    - **Interface**: Number of external interfaces
+    - **Complexity adjustments**: 14 technical factors (0-5 scale)
     """,
     
     'UCP': """
@@ -135,10 +137,14 @@ METHOD_INFO = {
     Use Case Points estimate effort based on the complexity of use cases.
     
     ### Input Parameters:
-    - **Actor Weight Total (UAW)**: Sum of all actor weights
-    - **Use Case Weight Total (UUCW)**: Sum of all use case weights
-    - **Technical Complexity Factor (TCF)**: Adjusts for technical complexity (0.6 to 1.4)
-    - **Environmental Complexity Factor (ECF)**: Adjusts for environmental factors (0.6 to 1.4)
+    - **Simple Actors**: Number of simple actors (weight: 1)
+    - **Average Actors**: Number of average actors (weight: 2)
+    - **Complex Actors**: Number of complex actors (weight: 3)
+    - **Simple Use Cases**: Number of simple use cases (weight: 5)
+    - **Average Use Cases**: Number of average use cases (weight: 10)
+    - **Complex Use Cases**: Number of complex use cases (weight: 15)
+    - **Technical Factors**: 13 technical factors (0-5 scale)
+    - **Environmental Factors**: 8 environmental factors (0-5 scale)
     """
 }
 
@@ -149,7 +155,7 @@ def create_effort_input_form(method):
     if method == 'LOC':
         col1, col2 = st.sidebar.columns(2)
         with col1:
-            input_data['loc'] = st.number_input('Lines of Code (LOC)', min_value=100, value=1000, step=100, help="Estimated number of lines of code")
+            input_data['kloc'] = st.number_input('KLOC (thousands of LOC)', min_value=0.1, value=10.0, step=0.1, help="Estimated thousand lines of code") / 1000
         
         st.sidebar.subheader("Cost Drivers:")
         st.sidebar.markdown("#### Product Attributes")
@@ -181,7 +187,7 @@ def create_effort_input_form(method):
             input_data['tool'] = st.slider('Software Tools', 0.83, 1.24, 1.0, 0.01, help="Use of software tools")
             input_data['sced'] = st.slider('Schedule Constraint', 1.00, 1.23, 1.0, 0.01, help="Required development schedule")
         
-        # Add mode selection (one-hot encoded in the training)
+        # Add mode selection (will be one-hot encoded)
         st.sidebar.markdown("#### Project Mode")
         mode_options = ['Organic', 'Semi-detached', 'Embedded']
         selected_mode = st.sidebar.radio("Development Mode", mode_options, index=0)
@@ -201,54 +207,195 @@ def create_effort_input_form(method):
             input_data['mode_s'] = 0
     
     elif method == 'FP':
-        # [FP input code remains unchanged]
-        st.sidebar.subheader("Actor Counts:")
+        # Các trường cho FP
+        st.sidebar.subheader("Function Point Components:")
         col1, col2 = st.sidebar.columns(2)
-        
+
         with col1:
-            input_data['Simple Actors'] = st.number_input('Simple Actors', min_value=0, value=3, help="Count of simple actors")
-            input_data['Average Actors'] = st.number_input('Average Actors', min_value=0, value=4, help="Count of average actors")
-        
+            input_data['AFP'] = st.number_input('AFP (Adjusted Function Points)', min_value=0.0, value=1.0, help="Adjusted Function Points")
+            input_data['Input'] = st.number_input('Input Count', min_value=0, value=30, help="Number of user inputs")
+            input_data['Output'] = st.number_input('Output Count', min_value=0, value=25, help="Number of user outputs")
+            input_data['Enquiry'] = st.number_input('Enquiry Count', min_value=0, value=15, help="Number of user enquiries")
+
         with col2:
-            input_data['Complex Actors'] = st.number_input('Complex Actors', min_value=0, value=2, help="Count of complex actors")
+            input_data['File'] = st.number_input('File Count', min_value=0, value=10, help="Number of files")
+            input_data['Interface'] = st.number_input('Interface Count', min_value=0, value=5, help="Number of external interfaces")
         
-        st.sidebar.subheader("Complexity Factors:")
-        input_data['TCF'] = st.sidebar.slider('Technical Complexity Factor', 0.6, 1.4, 1.0, 0.05, help="Adjusts for technical complexity")
-        input_data['ECF'] = st.sidebar.slider('Environmental Complexity Factor', 0.6, 1.4, 1.0, 0.05, help="Adjusts for environmental factors")
-        
+        # Các trường năng suất cần nhập: PDR_AFP, PDR_UFP, NPDR_AFP, NPDU_UFP
+        st.sidebar.subheader("Productivity Factors:")
+        input_data['PDR_AFP'] = st.number_input('PDR_AFP (Productivity Derived from AFP)', min_value=0.0, value=1.0, help="Productivity derived from Adjusted Function Points")
+        input_data['PDR_UFP'] = st.number_input('PDR_UFP (Productivity Derived from UFP)', min_value=0.0, value=1.0, help="Productivity derived from Unadjusted Function Points")
+        input_data['NPDR_AFP'] = st.number_input('NPDR_AFP (Non-Productivity Derived from AFP)', min_value=0.0, value=0.5, help="Non-productivity derived from Adjusted Function Points")
+        input_data['NPDU_UFP'] = st.number_input('NPDU_UFP (Non-Productivity Derived from UFP)', min_value=0.0, value=0.5, help="Non-productivity derived from Unadjusted Function Points")
+    
     elif method == 'UCP':
-        # [UCP input code remains unchanged]
-        st.sidebar.subheader("Use Case Points Components:")
+        st.sidebar.subheader("Actors:")
         col1, col2 = st.sidebar.columns(2)
         
         with col1:
-            input_data['UAW'] = st.number_input('Actor Weight Total', min_value=0, value=24, help="Sum of all actor weights")
+            simple_actors = st.number_input('Simple Actors', min_value=0, value=3, help="Count of simple actors")
+            average_actors = st.number_input('Average Actors', min_value=0, value=4, help="Count of average actors")
         
         with col2:
-            input_data['UUCW'] = st.number_input('Use Case Weight Total', min_value=0, value=150, help="Sum of all use case weights")
+            complex_actors = st.number_input('Complex Actors', min_value=0, value=2, help="Count of complex actors")
         
-        st.sidebar.subheader("Complexity Factors:")
-        input_data['TCF'] = st.sidebar.slider('Technical Complexity Factor', 0.6, 1.4, 1.0, 0.05, help="Adjusts for technical complexity")
-        input_data['ECF'] = st.sidebar.slider('Environmental Complexity Factor', 0.6, 1.4, 1.0, 0.05, help="Adjusts for environmental factors")
+        st.sidebar.subheader("Use Cases:")
+        col1, col2 = st.sidebar.columns(2)
+        
+        with col1:
+            simple_uc = st.number_input('Simple Use Cases', min_value=0, value=6, help="Count of simple use cases")
+            average_uc = st.number_input('Average Use Cases', min_value=0, value=8, help="Count of average use cases")
+        
+        with col2:
+            complex_uc = st.number_input('Complex Use Cases', min_value=0, value=4, help="Count of complex use cases")
+        
+        # Calculate UAW and UUCW
+        input_data['UAW'] = simple_actors * 1 + average_actors * 2 + complex_actors * 3
+        input_data['UUCW'] = simple_uc * 5 + average_uc * 10 + complex_uc * 15
+        
+        # Add the rest of the UCP model features
+        st.sidebar.subheader("Technical Factors:")
+        tech_factors = [
+            "T1_Distributed_System",
+            "T2_Response_Objectives",
+            "T3_End_User_Efficiency",
+            "T4_Complex_Processing",
+            "T5_Reusable_Code",
+            "T6_Easy_to_Install",
+            "T7_Easy_to_Use",
+            "T8_Portable",
+            "T9_Easy_to_Change",
+            "T10_Concurrent",
+            "T11_Security_Features",
+            "T12_Access_for_Third_Parties",
+            "T13_Special_Training_Required"
+        ]
+        
+        # Display technical factors as slider inputs
+        for i, factor in enumerate(tech_factors):
+            input_data[factor] = st.sidebar.slider(f'T{i+1}: {factor.replace("_", " ")}', 0, 5, 3, 1, 
+                                             help=f"Rate from 0 (no influence) to 5 (strong influence)")
+        
+        st.sidebar.subheader("Environmental Factors:")
+        env_factors = [
+            "E1_Familiar_with_RUP",
+            "E2_Application_Experience",
+            "E3_OO_Programming_Experience",
+            "E4_Lead_Analyst_Capability",
+            "E5_Motivation",
+            "E6_Stable_Requirements",
+            "E7_Part_Time_Workers",
+            "E8_Difficult_Programming_Language"
+        ]
+        
+        # Display environmental factors as slider inputs
+        for i, factor in enumerate(env_factors):
+            input_data[factor] = st.sidebar.slider(f'E{i+1}: {factor.replace("_", " ")}', 0, 5, 3, 1, 
+                                             help=f"Rate from 0 (no influence) to 5 (strong influence)")
     
     return input_data
+
+# Function to prepare features for model prediction
+def prepare_features(input_data, method):
+    if method == 'LOC':
+        # Directly use the input data since it's already in the expected format
+        features = pd.DataFrame([input_data])
+        return features
+    
+    elif method == 'FP':
+        
+        feature_order = [
+            'AFP', 'Input', 'Output', 'Enquiry', 'File', 'Interface', 
+            'PDR_AFP', 'PDR_UFP', 'NPDR_AFP', 'NPDU_UFP'
+        ]
+        
+        # Tạo một dictionary với các giá trị đã nhập theo thứ tự trường đã huấn luyện
+        china_features = {key: input_data[key] for key in feature_order}
+
+        return pd.DataFrame([china_features])
+
+        return pd.DataFrame([china_features])
+    
+    elif method == 'UCP':
+        # Start with the UAW and UUCW
+        ucp_features = {
+            'UAW': input_data['UAW'],
+            'UUCW': input_data['UUCW']
+        }
+        
+        # Calculate TCF (Technical Complexity Factor)
+        tech_factors = {
+            'T1_Distributed_System': 2.0,
+            'T2_Response_Objectives': 1.0,
+            'T3_End_User_Efficiency': 1.0,
+            'T4_Complex_Processing': 1.0,
+            'T5_Reusable_Code': 1.0,
+            'T6_Easy_to_Install': 0.5,
+            'T7_Easy_to_Use': 0.5,
+            'T8_Portable': 2.0,
+            'T9_Easy_to_Change': 1.0,
+            'T10_Concurrent': 1.0,
+            'T11_Security_Features': 1.0,
+            'T12_Access_for_Third_Parties': 1.0,
+            'T13_Special_Training_Required': 1.0
+        }
+        
+        tcf_sum = sum(tech_factors[factor] * input_data[factor] for factor in tech_factors)
+        tcf = 0.6 + (0.01 * tcf_sum)
+        
+        # Calculate ECF (Environmental Complexity Factor)
+        env_factors = {
+            'E1_Familiar_with_RUP': 1.5,
+            'E2_Application_Experience': 0.5,
+            'E3_OO_Programming_Experience': 1.0,
+            'E4_Lead_Analyst_Capability': 0.5,
+            'E5_Motivation': 1.0,
+            'E6_Stable_Requirements': 2.0,
+            'E7_Part_Time_Workers': -1.0,
+            'E8_Difficult_Programming_Language': -1.0
+        }
+        
+        ecf_sum = sum(env_factors[factor] * input_data[factor] for factor in env_factors)
+        ecf = 1.4 + (-0.03 * ecf_sum)
+        
+        # Calculate UCP (Use Case Points)
+        ucp = input_data['UAW'] + input_data['UUCW']
+        ucp_features['UCP'] = ucp
+        ucp_features['TCF'] = tcf
+        ucp_features['ECF'] = ecf
+        ucp_features['Real_P20'] = 20  # Productivity factor, typical constant
+        
+        # Add all technical and environmental factors to match training data
+        for factor in list(tech_factors.keys()) + list(env_factors.keys()):
+            ucp_features[factor] = input_data[factor]
+        
+        return pd.DataFrame([ucp_features])
+
 # Function to predict the effort using the selected model
 def predict_effort(input_data, method):
     try:
+        # Prepare the features based on the method
+        features_df = prepare_features(input_data, method)
+        
         if method == 'LOC':
-            scaled_input = scaler_loc.transform(np.array(list(input_data.values())).reshape(1, -1))
+            # Ensure column order matches training data
+            scaled_input = scaler_loc.transform(features_df)
             prediction = model_loc.predict(scaled_input)
         elif method == 'FP':
-            scaled_input = scaler_fp.transform(np.array(list(input_data.values())).reshape(1, -1))
+            # Ensure column order matches training data
+            scaled_input = scaler_fp.transform(features_df)
             prediction = model_fp.predict(scaled_input)
         elif method == 'UCP':
-            scaled_input = scaler_ucp.transform(np.array(list(input_data.values())).reshape(1, -1))
+            # Ensure column order matches training data
+            scaled_input = scaler_ucp.transform(features_df)
             prediction = model_ucp.predict(scaled_input)
         
         # Convert from log scale back to original scale
         return np.expm1(prediction[0])
     except Exception as e:
         st.error(f"Prediction error: {e}")
+        import traceback
+        st.error(traceback.format_exc())
         return None
 
 # Function to estimate project metrics (effort, cost, and time)
