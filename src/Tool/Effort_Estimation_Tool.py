@@ -310,7 +310,6 @@ def prepare_features(input_data, method):
     if method == 'LOC':
         # Create a dataframe with the input data in the correct format
         features = {
-            'equivphyskloc': input_data['equivphyskloc'],
             'rely': input_data['rely'],
             'data': input_data['data'],
             'cplx': input_data['cplx'],
@@ -326,10 +325,11 @@ def prepare_features(input_data, method):
             'modp': input_data['modp'],
             'tool': input_data['tool'],
             'sced': input_data['sced'],
+            'equivphyskloc': input_data['equivphyskloc'],
             'eaf': input_data['eaf'],
-            'mode_embedded': input_data['mode_embedded'],
-            'mode_organic': input_data['mode_organic'],
-            'mode_semidetached': input_data['mode_semidetached']
+            # 'mode_embedded': input_data['mode_embedded'],
+            # 'mode_organic': input_data['mode_organic'],
+            # 'mode_semidetached': input_data['mode_semidetached']
         }
         return pd.DataFrame([features])
     
