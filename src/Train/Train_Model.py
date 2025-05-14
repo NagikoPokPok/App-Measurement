@@ -2,13 +2,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import joblib
-import os
 from pathlib import Path
 
 # Set up paths
@@ -64,22 +61,22 @@ def train_loc_model():
     print(f"Training samples: {X_train.shape[0]}")
     print(f"Testing samples: {X_test.shape[0]}")
     
-    rf_model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
-    rf_model.fit(X_train, y_train)
+    gb_model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
+    gb_model.fit(X_train, y_train)
     
-    rf_pred = rf_model.fit(X_train, y_train)
+    gb_pred = gb_model.fit(X_train, y_train)
     
-    rf_pred = rf_model.predict(X_test)
-    rf_pred_original = np.expm1(rf_pred)
+    gb_pred = gb_model.predict(X_test)
+    gb_pred_original = np.expm1(gb_pred)
     y_test_original = np.expm1(y_test)
     
-    rf_mae = mean_absolute_error(y_test_original, rf_pred_original)
-    rf_rmse = np.sqrt(mean_squared_error(y_test_original, rf_pred_original))
-    rf_r2 = r2_score(y_test_original, rf_pred_original)
+    gb_mae = mean_absolute_error(y_test_original, gb_pred_original)
+    gb_rmse = np.sqrt(mean_squared_error(y_test_original, gb_pred_original))
+    gb_r2 = r2_score(y_test_original, gb_pred_original)
     
-    print(f"Random Forest (original scale) - MAE: {rf_mae:.2f}, RMSE: {rf_rmse:.2f}, R²: {rf_r2:.2f}")
+    print(f"Gradient Boosting (original scale) - MAE: {gb_mae:.2f}, RMSE: {gb_rmse:.2f}, R²: {gb_r2:.2f}")
     
-    joblib.dump(rf_model, MODEL_DIR / "trained_model_loc.pkl")
+    joblib.dump(gb_model, MODEL_DIR / "trained_model_loc.pkl")
     joblib.dump(scaler, SCALER_DIR / "scaler_loc.pkl")
     print(f"Saved LOC model and scaler to disk")
     
@@ -114,29 +111,40 @@ def train_ucp_model():
             fill_value = data[col].median()
         data.fillna({col: fill_value}, inplace=True)
     
-    # Select features and target variable - matches Project_2.py
     y = data['Real_Effort_Person_Hours']
     columns_to_drop = ['Project_No', 'Real_Effort_Person_Hours', 'Real_P20']
     X = data.drop(columns_to_drop, axis=1)
+
+    # 2.3 One-hot encode categorical variables
+    features = [
+        'Simple Actors', 'Average Actors', 'Complex Actors',
+        'UAW', 'Simple UC', 'Average UC', 'Complex UC', 
+        'UUCW', 'TCF', 'ECF'
+    ]
     
-    # One-hot encode categorical variables - IMPORTANT - matches Project_2.py
-    categorical_cols = X.select_dtypes(include=['object']).columns
-    X = pd.get_dummies(X, columns=categorical_cols, drop_first=True)
+    # Get categorical columns that need one-hot encoding
+    categorical_cols = ['Language', 'Methodology', 'ApplicationType'] 
     
-    # Log transform the target variable
+    # Create X (features) and y (target)
+    X = data[features + categorical_cols]
+    y = data['Real_Effort_Person_Hours']
+
+    # One-hot encode categorical variables
+    X = pd.get_dummies(X, columns=categorical_cols, drop_first=False)
+    
+    # Print feature names for debugging
+    print(f"Features after encoding: {X.columns.tolist()}")
+    print(f"Total number of features: {X.shape[1]}")
+
+    # Log transform y
     y_log = np.log1p(y)
     
-    # Feature scaling
+    # Scale features
     scaler = StandardScaler()
-    numeric_features = X.select_dtypes(include=['float64', 'int64']).columns
-    X_scaled = X.copy()
-    X_scaled[numeric_features] = scaler.fit_transform(X[numeric_features])
-    
-    # Save the feature names for later use in prediction
-    feature_names = X_scaled.columns.tolist()
-    print(f"Number of features after preprocessing: {len(feature_names)}")
-    
-    # Split the data
+    X_scaled = scaler.fit_transform(X)
+    X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
+
+    # Split data and train model
     X_train, X_test, y_train, y_test = train_test_split(
         X_scaled, y_log, test_size=0.2, random_state=42
     )
@@ -144,33 +152,36 @@ def train_ucp_model():
     print(f"Training samples: {X_train.shape[0]}")
     print(f"Testing samples: {X_test.shape[0]}")
     
-    # Train RandomForest model
-    print("Training Random Forest model...")
-    rf_model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
-    rf_model.fit(X_train, y_train)
+    # Train Gradient Boosting model
+    print("Training Gradient Boosting model...")
+    gb_model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
+    gb_model.fit(X_train, y_train)
     
     # Evaluate model
-    rf_pred = rf_model.predict(X_test)
-    rf_mae_log = mean_absolute_error(y_test, rf_pred)
-    rf_rmse_log = np.sqrt(mean_squared_error(y_test, rf_pred))
-    rf_r2_log = r2_score(y_test, rf_pred)
+    gb_pred = gb_model.predict(X_test)
+    gb_mae_log = mean_absolute_error(y_test, gb_pred)
+    gb_rmse_log = np.sqrt(mean_squared_error(y_test, gb_pred))
+    gb_r2_log = r2_score(y_test, gb_pred)
     
     # Transform back to original scale for interpretable metrics
-    rf_pred_original = np.expm1(rf_pred)
+    gb_pred_original = np.expm1(gb_pred)
     y_test_original = np.expm1(y_test)
     
-    rf_mae = mean_absolute_error(y_test_original, rf_pred_original)
-    rf_rmse = np.sqrt(mean_squared_error(y_test_original, rf_pred_original))
-    rf_r2 = r2_score(y_test_original, rf_pred_original)
+    gb_mae = mean_absolute_error(y_test_original, gb_pred_original)
+    gb_rmse = np.sqrt(mean_squared_error(y_test_original, gb_pred_original))
+    gb_r2 = r2_score(y_test_original, gb_pred_original)
     
-    print(f"Random Forest (log scale) - MAE: {rf_mae_log:.2f}, RMSE: {rf_rmse_log:.2f}, R²: {rf_r2_log:.2f}")
-    print(f"Random Forest (original scale) - MAE: {rf_mae:.2f}, RMSE: {rf_rmse:.2f}, R²: {rf_r2:.2f}")
+    print(f"Gradient Boosting (log scale) - MAE: {gb_mae_log:.2f}, RMSE: {gb_rmse_log:.2f}, R²: {gb_r2_log:.2f}")
+    print(f"Gradient Boosting (original scale) - MAE: {gb_mae:.2f}, RMSE: {gb_rmse:.2f}, R²: {gb_r2:.2f}")
     
     # Save the model and scaler
-    joblib.dump(rf_model, MODEL_DIR / "trained_model_ucp.pkl")
+    joblib.dump(gb_model, MODEL_DIR / "trained_model_ucp.pkl")
     joblib.dump(scaler, SCALER_DIR / "scaler_ucp.pkl")
     print(f"Saved UCP model and scaler to disk")
     
+    feature_names = X.columns.tolist()
+    joblib.dump(feature_names, MODEL_DIR / "ucp_feature_names.pkl")
+
     return True
 # 3. Train FP Model (Project_4.py equivalent)
 def train_fp_model():
@@ -197,8 +208,19 @@ def train_fp_model():
         print("No missing values found")
     
     # Select features and target variable
-    X = data.drop(['ID', 'Effort', 'Added', 'Changed', 'Deleted', 'Resource', 'Dev.Type', 'Duration', 'N_effort'], axis=1)  # Remove ID and target
-    y = data['Effort']  # The target variable is the actual effort
+        columns_to_drop = ['ID', 'Effort', 'Added', 'Changed', 'Deleted', 
+                      'Resource', 'Dev.Type', 'Duration', 'N_effort']
+    
+    # Only drop columns that exist in the DataFrame
+    existing_columns = [col for col in columns_to_drop if col in data.columns]
+    if existing_columns:
+        print(f"Dropping columns: {existing_columns}")
+        X = data.drop(existing_columns, axis=1)
+    else:
+        print("No columns to drop")
+        X = data.copy()
+    
+    y = data['Effort']   # The target variable is the actual effort
     
     # Check for features with zero variance (if any)
     zero_var_features = X.columns[X.var() == 0].tolist()

@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # 1. Load and explore the NASA93 dataset
-nasa93 = pd.read_csv('././dataset/nasa93.arff.csv', sep=';')
+nasa93 = pd.read_csv('../../dataset/nasa93.arff.csv', sep=';')
 print(f"Number of samples: {nasa93.shape[0]}")
 print(f"Features: {', '.join(nasa93.columns)}")
 
@@ -210,7 +210,7 @@ plt.grid(True)
 
 
 plt.tight_layout()
-plt.savefig('././img/nasa93_effort_prediction_results_improved.png')
+plt.savefig('../../img/nasa93_effort_prediction_results_improved.png')
 
 # 8. Find best model and provide conclusions
 best_model = max(results.items(), key=lambda x: x[1]['R²'])[0]
