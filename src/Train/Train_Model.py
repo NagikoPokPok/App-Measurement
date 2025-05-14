@@ -96,11 +96,17 @@ def train_ucp_model():
     
     ucp_data = pd.read_csv(ucp_path)
     print(f"Number of samples: {ucp_data.shape[0]}")
+    print(f"Features: {', '.join(ucp_data.columns)}")
     
     # Data preprocessing
     data = ucp_data.copy()
     
-    # Handle missing values
+    # Handle missing values - following Project_2.py approach
+    missing_values = data.isnull().sum()
+    print("\nMissing values per column:")
+    print(missing_values[missing_values > 0])
+    
+    # Fill missing values with appropriate method for each column
     for col in data.columns:
         if data[col].dtype == 'object':  # Categorical data
             fill_value = data[col].mode()[0]
@@ -108,12 +114,12 @@ def train_ucp_model():
             fill_value = data[col].median()
         data.fillna({col: fill_value}, inplace=True)
     
-    # Select features and target variable
+    # Select features and target variable - matches Project_2.py
     y = data['Real_Effort_Person_Hours']
     columns_to_drop = ['Project_No', 'Real_Effort_Person_Hours', 'Real_P20']
     X = data.drop(columns_to_drop, axis=1)
     
-    # One-hot encode categorical variables
+    # One-hot encode categorical variables - IMPORTANT - matches Project_2.py
     categorical_cols = X.select_dtypes(include=['object']).columns
     X = pd.get_dummies(X, columns=categorical_cols, drop_first=True)
     
@@ -125,6 +131,10 @@ def train_ucp_model():
     numeric_features = X.select_dtypes(include=['float64', 'int64']).columns
     X_scaled = X.copy()
     X_scaled[numeric_features] = scaler.fit_transform(X[numeric_features])
+    
+    # Save the feature names for later use in prediction
+    feature_names = X_scaled.columns.tolist()
+    print(f"Number of features after preprocessing: {len(feature_names)}")
     
     # Split the data
     X_train, X_test, y_train, y_test = train_test_split(
@@ -141,11 +151,20 @@ def train_ucp_model():
     
     # Evaluate model
     rf_pred = rf_model.predict(X_test)
-    rf_mae = mean_absolute_error(y_test, rf_pred)
-    rf_rmse = np.sqrt(mean_squared_error(y_test, rf_pred))
-    rf_r2 = r2_score(y_test, rf_pred)
+    rf_mae_log = mean_absolute_error(y_test, rf_pred)
+    rf_rmse_log = np.sqrt(mean_squared_error(y_test, rf_pred))
+    rf_r2_log = r2_score(y_test, rf_pred)
     
-    print(f"Random Forest - MAE: {rf_mae:.2f}, RMSE: {rf_rmse:.2f}, R²: {rf_r2:.2f}")
+    # Transform back to original scale for interpretable metrics
+    rf_pred_original = np.expm1(rf_pred)
+    y_test_original = np.expm1(y_test)
+    
+    rf_mae = mean_absolute_error(y_test_original, rf_pred_original)
+    rf_rmse = np.sqrt(mean_squared_error(y_test_original, rf_pred_original))
+    rf_r2 = r2_score(y_test_original, rf_pred_original)
+    
+    print(f"Random Forest (log scale) - MAE: {rf_mae_log:.2f}, RMSE: {rf_rmse_log:.2f}, R²: {rf_r2_log:.2f}")
+    print(f"Random Forest (original scale) - MAE: {rf_mae:.2f}, RMSE: {rf_rmse:.2f}, R²: {rf_r2:.2f}")
     
     # Save the model and scaler
     joblib.dump(rf_model, MODEL_DIR / "trained_model_ucp.pkl")
@@ -153,7 +172,6 @@ def train_ucp_model():
     print(f"Saved UCP model and scaler to disk")
     
     return True
-
 # 3. Train FP Model (Project_4.py equivalent)
 def train_fp_model():
     print("\n======= Training FP Model (China) =======")
