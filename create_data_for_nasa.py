@@ -14,11 +14,18 @@ rating_map = {
     'xh': 1.65   # Extra High
 }
 
-# === BƯỚC 2: Chuyển các giá trị chuỗi thành số theo rating_map ===
+# Bảng ngược lại để chuyển từ số về chuỗi
+reverse_rating_map = {v: k for k, v in rating_map.items()}
+
+# === BƯỚC 2: Hàm chuyển chuỗi thành số dựa trên rating_map ===
 def convert_to_numeric(val):
     return rating_map.get(val, np.nan)  # Trả về NaN nếu giá trị không hợp lệ
 
-# Áp dụng chuyển đổi cho các cột chuỗi
+# Hàm để chuyển từ số về chuỗi (ngược lại)
+def convert_to_string(val):
+    return reverse_rating_map.get(val, val)  # Trả về giá trị gốc nếu không có trong rating_map
+
+# Áp dụng chuyển đổi cho các cột chuỗi thành số trong quá trình tính Effort
 cols_to_convert = ['rely', 'data', 'cplx', 'time', 'stor', 'virt', 'turn', 'acap', 'aexp', 'pcap', 'vexp', 'lexp', 'modp', 'tool', 'sced']
 for col in cols_to_convert:
     df_cocomo81[col] = df_cocomo81[col].apply(convert_to_numeric)
@@ -61,8 +68,6 @@ def generate_synthetic_data(df, num_samples):
             synthetic_data[col] = np.random.choice(df[col].dropna().unique(), num_samples)
     
     synthetic_df = pd.DataFrame(synthetic_data)
-    # # Tính lại Effort cho dữ liệu sinh thêm
-    # synthetic_df['Effort'] = synthetic_df.apply(calculate_effort, axis=1)
     return synthetic_df
 
 # Sinh dữ liệu giả và tính Effort cho nó
@@ -71,8 +76,12 @@ df_synthetic = generate_synthetic_data(df_cocomo81, num_to_generate)
 # Gộp lại dữ liệu gốc và dữ liệu sinh thêm
 df_combined = pd.concat([df_cocomo81, df_synthetic], ignore_index=True)
 
-# === BƯỚC 5: Lưu kết quả ra file CSV ===
+# === BƯỚC 5: Chuyển các giá trị số trở lại chuỗi trước khi lưu ===
+for col in cols_to_convert:
+    df_combined[col] = df_combined[col].apply(convert_to_string)
+
+# === BƯỚC 6: Lưu kết quả ra file CSV ===
 df_combined.drop(columns=['Effort'], inplace=True)  # Loại bỏ cột 'Effort' trước khi lưu
-df_combined.to_csv("dataset/nasa93_Combined_10000.csv", index=False)
+df_combined.to_csv("dataset/nasa93_Combined_10000_test.csv", index=False)
 
 print("✅ File 10,000 dòng đã được tạo thành công tại: nasa93_Combined_10000_COCOMO.csv")
