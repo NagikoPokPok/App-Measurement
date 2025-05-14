@@ -8,10 +8,9 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.impute import SimpleImputer
-import joblib
 
 # 1. Load and explore the dataset
-ucp_data = pd.read_csv('././dataset/UCP_Dataset.csv')
+ucp_data = pd.read_csv('../../dataset/UCP_Dataset.csv')
 print(f"Number of samples: {ucp_data.shape[0]}")
 print(f"Features: {', '.join(ucp_data.columns)}")
 
@@ -138,7 +137,7 @@ plt.axhline(y=0, color='r', linestyle='-')
 plt.grid(True)
 
 plt.tight_layout()
-plt.savefig('././img/UCP_effort_prediction.png')
+plt.savefig('../../img/UCP_effort_prediction.png')
 
 # 8. Find best model based on test set R²
 best_model = max(results.items(), key=lambda x: x[1]['R²'])[0]
@@ -147,7 +146,3 @@ print(f"MAE: {results[best_model]['MAE']:.2f}")
 print(f"RMSE: {results[best_model]['RMSE']:.2f}")
 print(f"R²: {results[best_model]['R²']:.2f}")
 
-
-best_model_object = models[best_model]  # Lấy object model tốt nhất
-joblib.dump(best_model_object, './src/model/trained_model_ucp.pkl')
-joblib.dump(scaler, './src/scaler/scaler_ucp.pkl') 

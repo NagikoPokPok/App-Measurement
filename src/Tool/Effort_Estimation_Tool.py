@@ -236,24 +236,20 @@ def create_effort_input_form(method):
     elif method == 'UCP':
         # Collect actor counts
         st.sidebar.subheader("Actors:")
-        col1, col2 = st.sidebar.columns(2)
+        col1 = st.sidebar.columns(1)[0]  # Get first column from list
         
         with col1:
             simple_actors = st.number_input('Simple Actors', min_value=0, value=3, help="Count of simple actors")
             average_actors = st.number_input('Average Actors', min_value=0, value=4, help="Count of average actors")
-        
-        with col2:
             complex_actors = st.number_input('Complex Actors', min_value=0, value=2, help="Count of complex actors")
         
         # Collect use case counts
         st.sidebar.subheader("Use Cases:")
-        col1, col2 = st.sidebar.columns(2)
+        col1 = st.sidebar.columns(1)[0]  # Get first column from list
         
         with col1:
             simple_uc = st.number_input('Simple Use Cases', min_value=0, value=6, help="Count of simple use cases")
             average_uc = st.number_input('Average Use Cases', min_value=0, value=8, help="Count of average use cases")
-        
-        with col2:
             complex_uc = st.number_input('Complex Use Cases', min_value=0, value=4, help="Count of complex use cases")
         
         # Technical and Environmental factors
@@ -261,12 +257,27 @@ def create_effort_input_form(method):
         col1, col2 = st.sidebar.columns(2)
         
         with col1:
-            tcf = st.slider('Technical Complexity Factor (TCF)', 0.6, 1.3, 1.0, 0.01, 
-                          help="Technical complexity factor (T1-T13)")
-        
+            tcf = st.number_input(
+                'Technical Complexity Factor (TCF)', 
+                min_value=0.0,  # Changed to float
+                max_value=5.0,  # Added max value
+                value=0.6,      # Default value
+                step=0.1,       # Decimal step
+                format="%.5f",  # Show 5 decimal places
+                help="Technical complexity factor"
+            )
+    
+    
         with col2:
-            ecf = st.slider('Environmental Complexity Factor (ECF)', 0.6, 1.3, 1.0, 0.01,
-                          help="Environmental complexity factor (E1-E8)")
+            ecf = st.number_input(
+                'Environmental Complexity Factor (ECF)',
+                min_value=0.0,  # Changed to float
+                max_value=5.0,  # Added max value
+                value=0.6,      # Default value
+                step=0.1,       # Decimal step
+                format="%.5f",  # Show 5 decimal places
+                help="Environmental complexity factor"
+            )
             
         # Save raw inputs for model
         input_data['Simple Actors'] = simple_actors
@@ -345,7 +356,10 @@ def prepare_features(input_data, method):
         return pd.DataFrame([features])
     
     elif method == 'UCP':
-        # Create a DataFrame with the base features
+        # Load feature names used during training
+        feature_names = joblib.load(MODEL_DIR / "ucp_feature_names.pkl")
+        
+        # Create base features DataFrame
         features = {
             'Simple Actors': input_data['Simple Actors'],
             'Average Actors': input_data['Average Actors'],
@@ -356,72 +370,28 @@ def prepare_features(input_data, method):
             'Complex UC': input_data['Complex UC'],
             'UUCW': input_data['UUCW'],
             'TCF': input_data['TCF'],
-            'ECF': input_data['ECF'],
-            'UCP': input_data['UCP'],
-            'Real_P20': input_data['Real_P20']
+            'ECF': input_data['ECF']
         }
         
-        df = pd.DataFrame([features])
+        # Create DataFrame with all expected columns (initialized with 0)
+        df = pd.DataFrame(0, index=[0], columns=feature_names)
         
-        # Get the expected columns from the scaler
-        expected_columns = scaler_ucp.feature_names_in_.tolist() if hasattr(scaler_ucp, 'feature_names_in_') else []
+        # Fill in base features
+        for col in features:
+            if col in df.columns:
+                df[col] = features[col]
         
-        # Create empty DataFrame with all expected columns (initialized with zeros)
-        if expected_columns:
-            full_df = pd.DataFrame(0, index=[0], columns=expected_columns)
+        # Set categorical features based on input
+        if f"Language_{input_data['Language']}" in df.columns:
+            df[f"Language_{input_data['Language']}"] = 1
             
-            # Copy values from original df to full_df for columns that exist in both
-            for col in df.columns:
-                if col in full_df.columns:
-                    full_df[col] = df[col]
+        if f"Methodology_{input_data['Methodology']}" in df.columns:
+            df[f"Methodology_{input_data['Methodology']}"] = 1
             
-            # Handle categorical variables that were one-hot encoded during training
-            # Language encoding
-            language_map = {
-                'Java': 'Language_Java',
-                'C#': 'Language_C#', 
-                'C++': 'Language_C++',
-                'Visual Basic': 'Language_Visual Basic',
-                'Other': 'Language_Other'
-            }
-            if input_data['Language'] in language_map and language_map[input_data['Language']] in full_df.columns:
-                full_df[language_map[input_data['Language']]] = 1
+        if f"ApplicationType_{input_data['ApplicationType']}" in df.columns:
+            df[f"ApplicationType_{input_data['ApplicationType']}"] = 1
             
-            # Methodology encoding
-            methodology_map = {
-                'Waterfall': 'Methodology_Waterfall',
-                'Agile': 'Methodology_Agile',
-                'Incremental': 'Methodology_Incremental',
-                'Rapid Application Development': 'Methodology_Rapid Application Development',
-                'Other': 'Methodology_Other'
-            }
-            if input_data['Methodology'] in methodology_map and methodology_map[input_data['Methodology']] in full_df.columns:
-                full_df[methodology_map[input_data['Methodology']]] = 1
-            
-            # Application Type encoding
-            app_type_map = {
-                'Business Application': 'ApplicationType_Business Application',
-                'Real-Time Application': 'ApplicationType_Real-Time Application',
-                'Mathematically-Intensive Application': 'ApplicationType_Mathematically-Intensive Application',
-                'Other': 'ApplicationType_Other'
-            }
-            if input_data['ApplicationType'] in app_type_map and app_type_map[input_data['ApplicationType']] in full_df.columns:
-                full_df[app_type_map[input_data['ApplicationType']]] = 1
-            
-            # Debug info
-            st.sidebar.markdown("### Debug Info")
-            st.sidebar.markdown(f"Expected columns: {len(expected_columns)}")
-            st.sidebar.markdown(f"Current columns: {len(full_df.columns)}")
-            
-            return full_df
-        else:
-            # Fallback if we can't get feature names
-            st.warning("Could not determine expected features from the model. Prediction may not be accurate.")
-            
-            # Create comprehensive dummy variables for categorical columns
-            df = pd.get_dummies(df, columns=['Language', 'Methodology', 'ApplicationType'], prefix=['Language', 'Methodology', 'ApplicationType'])
-            
-            return df
+        return df
 # Function to predict the effort using the selected model
 def predict_effort(input_data, method):
     try:
