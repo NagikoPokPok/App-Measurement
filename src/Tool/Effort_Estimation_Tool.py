@@ -179,30 +179,30 @@ def create_effort_input_form(method):
         cost_driver_cols1 = st.sidebar.columns(2)
         
         with cost_driver_cols1[0]:
-            input_data['rely'] = st.slider('Required Reliability', 0.75, 1.40, 1.0, 0.05, help="How critical system failures are")
-            input_data['data'] = st.slider('Database Size', 0.94, 1.16, 1.0, 0.01, help="Ratio of database size to program size")
-            input_data['cplx'] = st.slider('Product Complexity', 0.70, 1.65, 1.0, 0.05, help="Complexity of the system's functions")
+            input_data['rely'] = st.slider('Required Reliability', 0.5, 1.65, 1.0, 0.05, help="How critical system failures are")
+            input_data['data'] = st.slider('Database Size', 0.5, 1.65, 1.0, 0.01, help="Ratio of database size to program size")
+            input_data['cplx'] = st.slider('Product Complexity', 0.5, 1.65, 1.0, 0.05, help="Complexity of the system's functions")
         
         with cost_driver_cols1[1]:
-            input_data['time'] = st.slider('Time Constraint', 1.00, 1.66, 1.0, 0.01, help="Execution time constraint")
-            input_data['stor'] = st.slider('Storage Constraint', 1.00, 1.56, 1.0, 0.01, help="Main storage constraint")
-            input_data['virt'] = st.slider('Platform Volatility', 0.87, 1.30, 1.0, 0.01, help="Hardware/software platform changes")
-            input_data['turn'] = st.slider('Turnaround Time', 0.87, 1.15, 1.0, 0.01, help="Development computer response time")
+            input_data['time'] = st.slider('Time Constraint', 0.5, 1.65, 1.0, 0.01, help="Execution time constraint")
+            input_data['stor'] = st.slider('Storage Constraint',0.5, 1.65, 1.0, 0.01, help="Main storage constraint")
+            input_data['virt'] = st.slider('Platform Volatility', 0.5, 1.65, 1.0, 0.01, help="Hardware/software platform changes")
+            input_data['turn'] = st.slider('Turnaround Time', 0.5, 1.65, 1.0, 0.01, help="Development computer response time")
         
         st.sidebar.markdown("#### Personnel Attributes")
         cost_driver_cols2 = st.sidebar.columns(2)
         
         with cost_driver_cols2[0]:
-            input_data['acap'] = st.slider('Analyst Capability', 0.71, 1.46, 1.0, 0.01, help="Analyst team capability")
-            input_data['aexp'] = st.slider('Analyst Experience', 0.82, 1.29, 1.0, 0.01, help="Analyst experience with application")
-            input_data['pcap'] = st.slider('Programmer Capability', 0.70, 1.42, 1.0, 0.01, help="Programmer team capability")
-            input_data['vexp'] = st.slider('VM Experience', 0.90, 1.21, 1.0, 0.01, help="Virtual machine experience")
+            input_data['acap'] = st.slider('Analyst Capability', 0.5, 1.65, 1.0, 0.01, help="Analyst team capability")
+            input_data['aexp'] = st.slider('Analyst Experience', 0.5, 1.65, 1.0, 0.01, help="Analyst experience with application")
+            input_data['pcap'] = st.slider('Programmer Capability', 0.5, 1.65, 1.0, 0.01, help="Programmer team capability")
+            input_data['vexp'] = st.slider('VM Experience', 0.5, 1.65, 1.0, 0.01, help="Virtual machine experience")
         
         with cost_driver_cols2[1]:
-            input_data['lexp'] = st.slider('Language Experience', 0.95, 1.14, 1.0, 0.01, help="Programming language experience")
-            input_data['modp'] = st.slider('Modern Practices', 0.82, 1.24, 1.0, 0.01, help="Use of modern programming practices")
-            input_data['tool'] = st.slider('Software Tools', 0.83, 1.24, 1.0, 0.01, help="Use of software tools")
-            input_data['sced'] = st.slider('Schedule Constraint', 1.00, 1.23, 1.0, 0.01, help="Required development schedule")
+            input_data['lexp'] = st.slider('Language Experience', 0.5, 1.65, 1.0, 0.01, help="Programming language experience")
+            input_data['modp'] = st.slider('Modern Practices', 0.5, 1.65, 1.0, 0.01, help="Use of modern programming practices")
+            input_data['tool'] = st.slider('Software Tools', 0.5, 1.65, 1.0, 0.01, help="Use of software tools")
+            input_data['sced'] = st.slider('Schedule Constraint', 0.5, 1.65, 1.0, 0.01, help="Required development schedule")
             
         # Calculate EAF (Effort Adjustment Factor)
         input_data['eaf'] = (input_data['rely'] * input_data['data'] * input_data['cplx'] * 
