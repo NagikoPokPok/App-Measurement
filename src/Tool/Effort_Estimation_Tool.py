@@ -473,42 +473,85 @@ def estimate_project_metrics(effort):
 def display_results(pred_effort, method):
     hours, cost, months = estimate_project_metrics(pred_effort)
     
-    # Create metrics for key values
+    # Create metrics for key values with rounded team size
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Effort (Hours)", f"{hours:.0f}")
     col2.metric("Cost (USD)", f"${cost:,.2f}")
     col3.metric("Duration (Months)", f"{months:.1f}")
-    col4.metric("Team Size (for 1 month)", f"{months:.1f} people")
+    col4.metric("Team Size", f"{round(months)} people")  # Rounded to whole number
     
-    # Create a detailed breakdown
+    # Create a detailed breakdown with timeline details
     st.subheader("Project Details")
+    
+    # Calculate phase durations (in months)
+    requirements_duration = months * 0.1
+    design_duration = months * 0.2
+    development_duration = months * 0.4
+    testing_duration = months * 0.2
+    deployment_duration = months * 0.1
+    
     details = {
-        "Metric": ["Estimation Method", "Estimated Effort", "Hourly Rate", "Total Cost", "Project Duration", "Required Team Size (1 month)"],
-        "Value": [method, f"{hours:.0f} hours", f"${COST_PER_HOUR:.2f}/hour", f"${cost:,.2f}", f"{months:.1f} months", f"{months:.1f} people"]
+        "Metric": [
+            "Estimation Method", 
+            "Estimated Effort", 
+            "Hourly Rate", 
+            "Total Cost", 
+            "Project Duration",
+            "Team Size",
+            "\nPhase Breakdown:",
+            "Requirements Phase",
+            "Design Phase",
+            "Development Phase",
+            "Testing Phase",
+            "Deployment Phase"
+        ],
+        "Value": [
+            method,
+            f"{hours:.0f} hours",
+            f"${COST_PER_HOUR:.2f}/hour",
+            f"${cost:,.2f}",
+            f"{months:.1f} months",
+            f"{round(months)} people",
+            "",
+            f"{requirements_duration:.1f} months ({requirements_duration/months*100:.0f}%)",
+            f"{design_duration:.1f} months ({design_duration/months*100:.0f}%)",
+            f"{development_duration:.1f} months ({development_duration/months*100:.0f}%)",
+            f"{testing_duration:.1f} months ({testing_duration/months*100:.0f}%)",
+            f"{deployment_duration:.1f} months ({deployment_duration/months*100:.0f}%)"
+        ]
     }
     st.table(pd.DataFrame(details))
     
-    # Create a visualization
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    # Create visualizations
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
     
     # Cost Breakdown Pie Chart
     labels = ['Development', 'Testing', 'Management']
-    sizes = [cost * 0.7, cost * 0.2, cost * 0.1]  # 70% development, 20% testing, 10% management
-    ax[0].pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
-    ax[0].set_title('Cost Breakdown')
+    sizes = [cost * 0.7, cost * 0.2, cost * 0.1]
+    ax1.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+    ax1.set_title('Cost Breakdown')
     
-    # Timeline Bar Chart
+    # Timeline Bar Chart with detailed information
     phases = ['Requirements', 'Design', 'Development', 'Testing', 'Deployment']
-    phase_times = [months * 0.1, months * 0.2, months * 0.4, months * 0.2, months * 0.1]  # As fractions of total time
+    phase_times = [requirements_duration, design_duration, development_duration, 
+                  testing_duration, deployment_duration]
     colors = ['#FF9999', '#66B2FF', '#99FF99', '#FFCC99', '#C2C2F0']
     
-    ax[1].barh(phases, phase_times, color=colors)
-    ax[1].set_xlabel('Months')
-    ax[1].set_title('Project Timeline')
+    # Create horizontal bar chart
+    bars = ax2.barh(phases, phase_times, color=colors)
+    ax2.set_xlabel('Months')
+    ax2.set_title('Project Timeline')
+    
+    # Add duration labels on the bars
+    for i, bar in enumerate(bars):
+        width = bar.get_width()
+        ax2.text(width/2, bar.get_y() + bar.get_height()/2,
+                f'{phase_times[i]:.1f}m ({phase_times[i]/months*100:.0f}%)',
+                ha='center', va='center')
     
     plt.tight_layout()
     st.pyplot(fig)
-
+    
 # Main function for the Streamlit interface
 def main():
     # Title and description
