@@ -41,13 +41,13 @@ def train_loc_model():
     for driver in cost_drivers:
         data[driver] = data[driver].map(rating_map)
     
-    X = data.drop(['recordnumber', 'projectname', 'cat2', 'forg', 'center', 'year', 'act_effort'], axis=1)
+    X = data.drop(['recordnumber', 'projectname', 'cat2', 'forg', 'center', 'year', 'act_effort', 'mode'], axis=1)
     y = data['act_effort']
     
     X['equivphyskloc'] = np.log1p(X['equivphyskloc'])  # Log-transform KLOC
     X['eaf'] = X[cost_drivers].prod(axis=1)  # Effort Adjustment Factor
     
-    X = pd.get_dummies(X, columns=['mode'], prefix='mode')
+    # X = pd.get_dummies(X, columns=['mode'], prefix='mode')
     
     if X.isnull().sum().sum() > 0:
         X = X.dropna()
