@@ -154,8 +154,25 @@ def create_effort_input_form(method):
     
     if method == 'LOC':
         col1, col2 = st.sidebar.columns(2)
+        
         with col1:
-            input_data['kloc'] = st.number_input('KLOC (thousands of LOC)', min_value=0.1, value=10.0, step=0.1, help="Estimated thousand lines of code") / 1000
+            # Add KLOC input field
+            input_data['equivphyskloc'] = st.number_input('KLOC (K Lines of Code)', min_value=0.1, value=50.0, step=0.1, help="Estimated thousands of lines of code")
+            # Add mode selection
+            mode = st.selectbox('Development Mode', ['Organic', 'Semi-detached', 'Embedded'], help="Software development mode")
+            # Encode mode as dummy variables
+            if mode == 'Organic':
+                input_data['mode_embedded'] = 0
+                input_data['mode_organic'] = 1
+                input_data['mode_semidetached'] = 0
+            elif mode == 'Semi-detached':
+                input_data['mode_embedded'] = 0
+                input_data['mode_organic'] = 0
+                input_data['mode_semidetached'] = 1
+            else:  # Embedded
+                input_data['mode_embedded'] = 1
+                input_data['mode_organic'] = 0
+                input_data['mode_semidetached'] = 0
         
         st.sidebar.subheader("Cost Drivers:")
         st.sidebar.markdown("#### Product Attributes")
@@ -186,28 +203,16 @@ def create_effort_input_form(method):
             input_data['modp'] = st.slider('Modern Practices', 0.82, 1.24, 1.0, 0.01, help="Use of modern programming practices")
             input_data['tool'] = st.slider('Software Tools', 0.83, 1.24, 1.0, 0.01, help="Use of software tools")
             input_data['sced'] = st.slider('Schedule Constraint', 1.00, 1.23, 1.0, 0.01, help="Required development schedule")
-        
-        # Add mode selection (will be one-hot encoded)
-        st.sidebar.markdown("#### Project Mode")
-        mode_options = ['Organic', 'Semi-detached', 'Embedded']
-        selected_mode = st.sidebar.radio("Development Mode", mode_options, index=0)
-        
-        # Create one-hot encoding manually
-        if selected_mode == 'Organic':
-            input_data['mode_e'] = 0
-            input_data['mode_o'] = 1
-            input_data['mode_s'] = 0
-        elif selected_mode == 'Semi-detached':
-            input_data['mode_e'] = 0
-            input_data['mode_o'] = 0
-            input_data['mode_s'] = 1
-        else:  # Embedded
-            input_data['mode_e'] = 1
-            input_data['mode_o'] = 0
-            input_data['mode_s'] = 0
+            
+        # Calculate EAF (Effort Adjustment Factor)
+        input_data['eaf'] = (input_data['rely'] * input_data['data'] * input_data['cplx'] * 
+                             input_data['time'] * input_data['stor'] * input_data['virt'] * 
+                             input_data['turn'] * input_data['acap'] * input_data['aexp'] * 
+                             input_data['pcap'] * input_data['vexp'] * input_data['lexp'] * 
+                             input_data['modp'] * input_data['tool'] * input_data['sced'])
     
     elif method == 'FP':
-        # Các trường cho FP
+        # Function Point components
         st.sidebar.subheader("Function Point Components:")
         col1, col2 = st.sidebar.columns(2)
 
@@ -221,7 +226,7 @@ def create_effort_input_form(method):
             input_data['File'] = st.number_input('File Count', min_value=0, value=10, help="Number of files")
             input_data['Interface'] = st.number_input('Interface Count', min_value=0, value=5, help="Number of external interfaces")
         
-        # Các trường năng suất cần nhập: PDR_AFP, PDR_UFP, NPDR_AFP, NPDU_UFP
+        # Productivity factors
         st.sidebar.subheader("Productivity Factors:")
         input_data['PDR_AFP'] = st.number_input('PDR_AFP (Productivity Derived from AFP)', min_value=0.0, value=1.0, help="Productivity derived from Adjusted Function Points")
         input_data['PDR_UFP'] = st.number_input('PDR_UFP (Productivity Derived from UFP)', min_value=0.0, value=1.0, help="Productivity derived from Unadjusted Function Points")
@@ -229,6 +234,7 @@ def create_effort_input_form(method):
         input_data['NPDU_UFP'] = st.number_input('NPDU_UFP (Non-Productivity Derived from UFP)', min_value=0.0, value=0.5, help="Non-productivity derived from Unadjusted Function Points")
     
     elif method == 'UCP':
+        # Collect actor counts
         st.sidebar.subheader("Actors:")
         col1, col2 = st.sidebar.columns(2)
         
@@ -239,6 +245,7 @@ def create_effort_input_form(method):
         with col2:
             complex_actors = st.number_input('Complex Actors', min_value=0, value=2, help="Count of complex actors")
         
+        # Collect use case counts
         st.sidebar.subheader("Use Cases:")
         col1, col2 = st.sidebar.columns(2)
         
@@ -249,128 +256,172 @@ def create_effort_input_form(method):
         with col2:
             complex_uc = st.number_input('Complex Use Cases', min_value=0, value=4, help="Count of complex use cases")
         
+        # Technical and Environmental factors
+        st.sidebar.subheader("Complexity Factors:")
+        col1, col2 = st.sidebar.columns(2)
+        
+        with col1:
+            tcf = st.slider('Technical Complexity Factor (TCF)', 0.6, 1.3, 1.0, 0.01, 
+                          help="Technical complexity factor (T1-T13)")
+        
+        with col2:
+            ecf = st.slider('Environmental Complexity Factor (ECF)', 0.6, 1.3, 1.0, 0.01,
+                          help="Environmental complexity factor (E1-E8)")
+            
+        # Save raw inputs for model
+        input_data['Simple Actors'] = simple_actors
+        input_data['Average Actors'] = average_actors  
+        input_data['Complex Actors'] = complex_actors
+        input_data['Simple UC'] = simple_uc
+        input_data['Average UC'] = average_uc
+        input_data['Complex UC'] = complex_uc
+        
         # Calculate UAW and UUCW
         input_data['UAW'] = simple_actors * 1 + average_actors * 2 + complex_actors * 3
         input_data['UUCW'] = simple_uc * 5 + average_uc * 10 + complex_uc * 15
+        input_data['TCF'] = tcf
+        input_data['ECF'] = ecf
         
-        # Add the rest of the UCP model features
-        st.sidebar.subheader("Technical Factors:")
-        tech_factors = [
-            "T1_Distributed_System",
-            "T2_Response_Objectives",
-            "T3_End_User_Efficiency",
-            "T4_Complex_Processing",
-            "T5_Reusable_Code",
-            "T6_Easy_to_Install",
-            "T7_Easy_to_Use",
-            "T8_Portable",
-            "T9_Easy_to_Change",
-            "T10_Concurrent",
-            "T11_Security_Features",
-            "T12_Access_for_Third_Parties",
-            "T13_Special_Training_Required"
-        ]
+        # Calculate UCP and add productivity factor (default is 20 person-hours per UCP)
+        input_data['UCP'] = (input_data['UAW'] + input_data['UUCW']) * tcf * ecf
+        input_data['Real_P20'] = 20
         
-        # Display technical factors as slider inputs
-        for i, factor in enumerate(tech_factors):
-            input_data[factor] = st.sidebar.slider(f'T{i+1}: {factor.replace("_", " ")}', 0, 5, 3, 1, 
-                                             help=f"Rate from 0 (no influence) to 5 (strong influence)")
+        # Development environment selection
+        st.sidebar.subheader("Development Environment:")
+        language = st.sidebar.selectbox('Programming Language', 
+                                      ['Java', 'C#', 'C++', 'Visual Basic', 'Other'], 
+                                      index=0)
+        methodology = st.sidebar.selectbox('Methodology',
+                                         ['Waterfall', 'Agile', 'Incremental', 'Rapid Application Development', 'Other'],
+                                         index=0)
+        app_type = st.sidebar.selectbox('Application Type',
+                                      ['Business Application', 'Real-Time Application', 'Mathematically-Intensive Application', 'Other'],
+                                      index=0)
         
-        st.sidebar.subheader("Environmental Factors:")
-        env_factors = [
-            "E1_Familiar_with_RUP",
-            "E2_Application_Experience",
-            "E3_OO_Programming_Experience",
-            "E4_Lead_Analyst_Capability",
-            "E5_Motivation",
-            "E6_Stable_Requirements",
-            "E7_Part_Time_Workers",
-            "E8_Difficult_Programming_Language"
-        ]
-        
-        # Display environmental factors as slider inputs
-        for i, factor in enumerate(env_factors):
-            input_data[factor] = st.sidebar.slider(f'E{i+1}: {factor.replace("_", " ")}', 0, 5, 3, 1, 
-                                             help=f"Rate from 0 (no influence) to 5 (strong influence)")
-    
+        # Save these values
+        input_data['Language'] = language
+        input_data['Methodology'] = methodology
+        input_data['ApplicationType'] = app_type
+
     return input_data
 
 # Function to prepare features for model prediction
 def prepare_features(input_data, method):
     if method == 'LOC':
-        # Directly use the input data since it's already in the expected format
-        features = pd.DataFrame([input_data])
-        return features
+        # Create a dataframe with the input data in the correct format
+        features = {
+            'equivphyskloc': input_data['equivphyskloc'],
+            'rely': input_data['rely'],
+            'data': input_data['data'],
+            'cplx': input_data['cplx'],
+            'time': input_data['time'],
+            'stor': input_data['stor'],
+            'virt': input_data['virt'],
+            'turn': input_data['turn'],
+            'acap': input_data['acap'],
+            'aexp': input_data['aexp'],
+            'pcap': input_data['pcap'],
+            'vexp': input_data['vexp'],
+            'lexp': input_data['lexp'],
+            'modp': input_data['modp'],
+            'tool': input_data['tool'],
+            'sced': input_data['sced'],
+            'eaf': input_data['eaf'],
+            'mode_embedded': input_data['mode_embedded'],
+            'mode_organic': input_data['mode_organic'],
+            'mode_semidetached': input_data['mode_semidetached']
+        }
+        return pd.DataFrame([features])
     
     elif method == 'FP':
-        
+        # Create a dataframe with the input data for FP
         feature_order = [
             'AFP', 'Input', 'Output', 'Enquiry', 'File', 'Interface', 
             'PDR_AFP', 'PDR_UFP', 'NPDR_AFP', 'NPDU_UFP'
         ]
         
-        # Tạo một dictionary với các giá trị đã nhập theo thứ tự trường đã huấn luyện
-        china_features = {key: input_data[key] for key in feature_order}
-
-        return pd.DataFrame([china_features])
-
-        return pd.DataFrame([china_features])
+        # Create features dictionary with the values in the correct order
+        features = {key: input_data[key] for key in feature_order}
+        return pd.DataFrame([features])
     
     elif method == 'UCP':
-        # Start with the UAW and UUCW
-        ucp_features = {
+        # Create a DataFrame with the base features
+        features = {
+            'Simple Actors': input_data['Simple Actors'],
+            'Average Actors': input_data['Average Actors'],
+            'Complex Actors': input_data['Complex Actors'],
             'UAW': input_data['UAW'],
-            'UUCW': input_data['UUCW']
+            'Simple UC': input_data['Simple UC'],
+            'Average UC': input_data['Average UC'],
+            'Complex UC': input_data['Complex UC'],
+            'UUCW': input_data['UUCW'],
+            'TCF': input_data['TCF'],
+            'ECF': input_data['ECF'],
+            'UCP': input_data['UCP'],
+            'Real_P20': input_data['Real_P20']
         }
         
-        # Calculate TCF (Technical Complexity Factor)
-        tech_factors = {
-            'T1_Distributed_System': 2.0,
-            'T2_Response_Objectives': 1.0,
-            'T3_End_User_Efficiency': 1.0,
-            'T4_Complex_Processing': 1.0,
-            'T5_Reusable_Code': 1.0,
-            'T6_Easy_to_Install': 0.5,
-            'T7_Easy_to_Use': 0.5,
-            'T8_Portable': 2.0,
-            'T9_Easy_to_Change': 1.0,
-            'T10_Concurrent': 1.0,
-            'T11_Security_Features': 1.0,
-            'T12_Access_for_Third_Parties': 1.0,
-            'T13_Special_Training_Required': 1.0
-        }
+        df = pd.DataFrame([features])
         
-        tcf_sum = sum(tech_factors[factor] * input_data[factor] for factor in tech_factors)
-        tcf = 0.6 + (0.01 * tcf_sum)
+        # Get the expected columns from the scaler
+        expected_columns = scaler_ucp.feature_names_in_.tolist() if hasattr(scaler_ucp, 'feature_names_in_') else []
         
-        # Calculate ECF (Environmental Complexity Factor)
-        env_factors = {
-            'E1_Familiar_with_RUP': 1.5,
-            'E2_Application_Experience': 0.5,
-            'E3_OO_Programming_Experience': 1.0,
-            'E4_Lead_Analyst_Capability': 0.5,
-            'E5_Motivation': 1.0,
-            'E6_Stable_Requirements': 2.0,
-            'E7_Part_Time_Workers': -1.0,
-            'E8_Difficult_Programming_Language': -1.0
-        }
-        
-        ecf_sum = sum(env_factors[factor] * input_data[factor] for factor in env_factors)
-        ecf = 1.4 + (-0.03 * ecf_sum)
-        
-        # Calculate UCP (Use Case Points)
-        ucp = input_data['UAW'] + input_data['UUCW']
-        ucp_features['UCP'] = ucp
-        ucp_features['TCF'] = tcf
-        ucp_features['ECF'] = ecf
-        ucp_features['Real_P20'] = 20  # Productivity factor, typical constant
-        
-        # Add all technical and environmental factors to match training data
-        for factor in list(tech_factors.keys()) + list(env_factors.keys()):
-            ucp_features[factor] = input_data[factor]
-        
-        return pd.DataFrame([ucp_features])
-
+        # Create empty DataFrame with all expected columns (initialized with zeros)
+        if expected_columns:
+            full_df = pd.DataFrame(0, index=[0], columns=expected_columns)
+            
+            # Copy values from original df to full_df for columns that exist in both
+            for col in df.columns:
+                if col in full_df.columns:
+                    full_df[col] = df[col]
+            
+            # Handle categorical variables that were one-hot encoded during training
+            # Language encoding
+            language_map = {
+                'Java': 'Language_Java',
+                'C#': 'Language_C#', 
+                'C++': 'Language_C++',
+                'Visual Basic': 'Language_Visual Basic',
+                'Other': 'Language_Other'
+            }
+            if input_data['Language'] in language_map and language_map[input_data['Language']] in full_df.columns:
+                full_df[language_map[input_data['Language']]] = 1
+            
+            # Methodology encoding
+            methodology_map = {
+                'Waterfall': 'Methodology_Waterfall',
+                'Agile': 'Methodology_Agile',
+                'Incremental': 'Methodology_Incremental',
+                'Rapid Application Development': 'Methodology_Rapid Application Development',
+                'Other': 'Methodology_Other'
+            }
+            if input_data['Methodology'] in methodology_map and methodology_map[input_data['Methodology']] in full_df.columns:
+                full_df[methodology_map[input_data['Methodology']]] = 1
+            
+            # Application Type encoding
+            app_type_map = {
+                'Business Application': 'ApplicationType_Business Application',
+                'Real-Time Application': 'ApplicationType_Real-Time Application',
+                'Mathematically-Intensive Application': 'ApplicationType_Mathematically-Intensive Application',
+                'Other': 'ApplicationType_Other'
+            }
+            if input_data['ApplicationType'] in app_type_map and app_type_map[input_data['ApplicationType']] in full_df.columns:
+                full_df[app_type_map[input_data['ApplicationType']]] = 1
+            
+            # Debug info
+            st.sidebar.markdown("### Debug Info")
+            st.sidebar.markdown(f"Expected columns: {len(expected_columns)}")
+            st.sidebar.markdown(f"Current columns: {len(full_df.columns)}")
+            
+            return full_df
+        else:
+            # Fallback if we can't get feature names
+            st.warning("Could not determine expected features from the model. Prediction may not be accurate.")
+            
+            # Create comprehensive dummy variables for categorical columns
+            df = pd.get_dummies(df, columns=['Language', 'Methodology', 'ApplicationType'], prefix=['Language', 'Methodology', 'ApplicationType'])
+            
+            return df
 # Function to predict the effort using the selected model
 def predict_effort(input_data, method):
     try:
@@ -378,20 +429,63 @@ def predict_effort(input_data, method):
         features_df = prepare_features(input_data, method)
         
         if method == 'LOC':
-            # Ensure column order matches training data
-            scaled_input = scaler_loc.transform(features_df)
-            prediction = model_loc.predict(scaled_input)
+            # For LOC model
+            # Log transform KLOC as done in training
+            features_df['equivphyskloc'] = np.log1p(features_df['equivphyskloc'])
+            
+            # Scale the features
+            scaled_features = scaler_loc.transform(features_df)
+            
+            # Make prediction
+            log_prediction = model_loc.predict(scaled_features)
+            
+            # Convert from log scale back to original scale
+            prediction = np.expm1(log_prediction[0])
+            
         elif method == 'FP':
-            # Ensure column order matches training data
-            scaled_input = scaler_fp.transform(features_df)
-            prediction = model_fp.predict(scaled_input)
+            # For FP model
+            # Scale the features
+            scaled_features = scaler_fp.transform(features_df)
+            
+            # Make prediction 
+            log_prediction = model_fp.predict(scaled_features)
+            
+            # Convert from log scale back to original scale
+            prediction = np.expm1(log_prediction[0])
+            
         elif method == 'UCP':
-            # Ensure column order matches training data
-            scaled_input = scaler_ucp.transform(features_df)
-            prediction = model_ucp.predict(scaled_input)
+            # For UCP model
+            # The challenge with UCP is ensuring the columns match exactly
+            
+            # First we need to get the expected columns from the scaler
+            expected_columns = scaler_ucp.feature_names_in_.tolist() if hasattr(scaler_ucp, 'feature_names_in_') else None
+            
+            if expected_columns:
+                st.sidebar.markdown(f"Expected columns: {expected_columns}")
+                
+                # Fill missing columns with 0
+                for col in expected_columns:
+                    if col not in features_df.columns:
+                        features_df[col] = 0
+                
+                # Select only the expected columns in the right order
+                features_df = features_df[expected_columns]
+            
+            # Scale the features
+            scaled_features = scaler_ucp.transform(features_df)
+            
+            # Make prediction
+            log_prediction = model_ucp.predict(scaled_features)
+            
+            # Convert from log scale back to original scale
+            prediction = np.expm1(log_prediction[0])
+            
+        else:
+            st.error(f"Unknown method: {method}")
+            return None
         
-        # Convert from log scale back to original scale
-        return np.expm1(prediction[0])
+        return prediction
+        
     except Exception as e:
         st.error(f"Prediction error: {e}")
         import traceback
