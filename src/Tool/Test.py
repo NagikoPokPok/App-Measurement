@@ -155,42 +155,92 @@ def create_effort_input_form(method):
     input_data = {}
     
     if method == 'LOC':
+         # 🟢 Bước 1: Giá trị mặc định là 0
+        default_values = {
+            'equivphyskloc': 0.0,
+            'rely': 1.0,
+            'data': 1.0,
+            'cplx': 1.0,
+            'time': 1.0,
+            'stor': 1.0,
+            'virt': 1.0,
+            'turn': 1.0,
+            'acap': 1.0,
+            'aexp': 1.0,
+            'pcap': 1.0,
+            'vexp': 1.0,
+            'lexp': 1.0,
+            'modp': 1.0,
+            'tool': 1.0,
+            'sced': 1.0
+        }
+
+        # 🟢 Bước 2: Hiển thị file uploader
+        st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
+        uploaded_file = st.sidebar.file_uploader("Chọn file Excel", type=["xlsx"])
+
+        # 🟢 Bước 3: Nếu có file, đọc và cập nhật default_values
+        if uploaded_file is not None:
+            try:
+                df = pd.read_excel(uploaded_file)
+                expected_cols = {'equivphyskloc', 'rely', 'data', 'cplx', 'time', 'stor', 'virt', 'turn', 'acap', 'aexp', 'pcap', 'vexp', 'lexp', 'modp', 'tool', 'sced'}
+                if not df.empty and expected_cols.issubset(df.columns):
+                    default_values['equivphyskloc'] = float(df['equivphyskloc'].iloc[0])
+                    default_values['rely'] = float(df['rely'].iloc[0])
+                    default_values['data'] = float(df['data'].iloc[0])
+                    default_values['cplx'] = float(df['cplx'].iloc[0])
+                    default_values['time'] = float(df['time'].iloc[0])
+                    default_values['stor'] = float(df['stor'].iloc[0])
+                    default_values['virt'] = float(df['virt'].iloc[0])
+                    default_values['turn'] = float(df['turn'].iloc[0])
+                    default_values['acap'] = float(df['acap'].iloc[0])
+                    default_values['aexp'] = float(df['aexp'].iloc[0])
+                    default_values['pcap'] = float(df['pcap'].iloc[0])
+                    default_values['vexp'] = float(df['vexp'].iloc[0])
+                    default_values['lexp'] = float(df['lexp'].iloc[0])
+                    default_values['modp'] = float(df['modp'].iloc[0])
+                    default_values['tool'] = float(df['tool'].iloc[0])
+                    default_values['sced'] = float(df['sced'].iloc[0])
+            except Exception as e:
+                st.sidebar.error(f"Lỗi khi đọc file: {e}")
+
+
         col1, col2 = st.sidebar.columns(2)
         
         with col1:
             # Add KLOC input field
-            input_data['equivphyskloc'] = (st.number_input('KLOC (K Lines of Code)', min_value=0.1, value=50.0, step=0.1, help="Estimated thousands of lines of code"))
-
-        
+            input_data['equivphyskloc'] = st.number_input('KLOC (K Lines of Code)', min_value=0.1, value=default_values['equivphyskloc'], step=0.1, help="Estimated thousands of lines of code")
+             
         st.sidebar.subheader("Cost Drivers:")
         st.sidebar.markdown("#### Product Attributes")
         cost_driver_cols1 = st.sidebar.columns(2)
         
         with cost_driver_cols1[0]:
-            input_data['rely'] = st.number_input('Required Reliability', 0.75, 1.40, 1.0, 0.05, help="How critical system failures are")
-            input_data['data'] = st.number_input('Database Size', 0.94, 1.16, 1.0, 0.01, help="Ratio of database size to program size")
-            input_data['cplx'] = st.number_input('Product Complexity', 0.70, 1.65, 1.0, 0.05, help="Complexity of the system's functions")
+            input_data['rely'] = st.number_input('Required Reliability', min_value=0.0, max_value=1.40, value=default_values['rely'], help="How critical system failures are")
+            input_data['data'] = st.number_input('Database Size', min_value=0.94, max_value=1.16, value=default_values['data'], help="Ratio of database size to program size")
+            input_data['cplx'] = st.number_input('Product Complexity', min_value=0.70, max_value=1.65, value=default_values['cplx'], help="Complexity of the system's functions")
         
         with cost_driver_cols1[1]:
-            input_data['time'] = st.number_input('Time Constraint', 1.00, 1.66, 1.0, 0.01, help="Execution time constraint")
-            input_data['stor'] = st.number_input('Storage Constraint', 1.00, 1.56, 1.0, 0.01, help="Main storage constraint")
-            input_data['virt'] = st.number_input('Platform Volatility', 0.87, 1.30, 1.0, 0.01, help="Hardware/software platform changes")
-            input_data['turn'] = st.number_input('Turnaround Time', 0.87, 1.15, 1.0, 0.01, help="Development computer response time")
+            
+            input_data['time'] = st.number_input('Time Constraint', min_value=1.00, max_value=1.66, value=default_values['time'], help="Execution time constraint")
+            input_data['stor'] = st.number_input('Storage Constraint', min_value=1.00, max_value=1.56, value=default_values['stor'], help="Main storage constraint")
+            input_data['virt'] = st.number_input('Virtual Machine Volatility', min_value=0.87, max_value=1.30, value=default_values['virt'], help="Hardware/software platform changes")
+            input_data['turn'] = st.number_input('Turnaround Time', min_value=0.87, max_value=1.15, value=default_values['turn'], help="Development computer response time")
         
         st.sidebar.markdown("#### Personnel Attributes")
         cost_driver_cols2 = st.sidebar.columns(2)
         
         with cost_driver_cols2[0]:
-            input_data['acap'] = st.number_input('Analyst Capability', 0.71, 1.46, 1.0, 0.01, help="Analyst team capability")
-            input_data['aexp'] = st.number_input('Analyst Experience', 0.82, 1.29, 1.0, 0.01, help="Analyst experience with application")
-            input_data['pcap'] = st.number_input('Programmer Capability', 0.70, 1.42, 1.0, 0.01, help="Programmer team capability")
-            input_data['vexp'] = st.number_input('VM Experience', 0.90, 1.21, 1.0, 0.01, help="Virtual machine experience")
+            input_data['acap'] = st.number_input('Analyst Capability', 0.71, 1.46, value=default_values['acap'], help="Analyst team capability")
+            input_data['aexp'] = st.number_input('Analyst Experience', 0.82, 1.29, value=default_values['aexp'], help="Analyst experience with application")
+            input_data['pcap'] = st.number_input('Programmer Capability', 0.70, 1.42, value=default_values['pcap'], help="Programmer team capability")
+            input_data['vexp'] = st.number_input('VM Experience', 0.90, 1.21, value=default_values['vexp'], help="Virtual machine experience")
         
         with cost_driver_cols2[1]:
-            input_data['lexp'] = st.number_input('Language Experience', 0.95, 1.14, 1.0, 0.01, help="Programming language experience")
-            input_data['modp'] = st.number_input('Modern Practices', 0.82, 1.24, 1.0, 0.01, help="Use of modern programming practices")
-            input_data['tool'] = st.number_input('Software Tools', 0.83, 1.24, 1.0, 0.01, help="Use of software tools")
-            input_data['sced'] = st.number_input('Schedule Constraint', 1.00, 1.23, 1.0, 0.01, help="Required development schedule")
+            input_data['lexp'] = st.number_input('Language Experience', 0.95, 1.14, value=default_values['lexp'], help="Programming language experience")
+            input_data['modp'] = st.number_input('Modern Practices', 0.82, 1.24, value=default_values['modp'], help="Use of modern programming practices")
+            input_data['tool'] = st.number_input('Software Tools', 0.83, 1.24, value=default_values['tool'], help="Use of software tools")
+            input_data['sced'] = st.number_input('Schedule Constraint', 1.00, 1.23, value=default_values['sced'], help="Required development schedule")
             
         # Calculate EAF (Effort Adjustment Factor)
         input_data['eaf'] = (input_data['rely'] * input_data['data'] * input_data['cplx'] * 
@@ -201,7 +251,7 @@ def create_effort_input_form(method):
     
 
     elif method == 'FP':
-            # 🟢 Bước 1: Giá trị mặc định là 0
+        # 🟢 Bước 1: Giá trị mặc định là 0
         default_values = {
             'AFP': 0.0,
             'EI': 0,
