@@ -7,7 +7,6 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import joblib
 
 # 1. Load and explore the China dataset
 china_data = pd.read_csv('../../dataset/china.csv', sep=',')
@@ -151,6 +150,3 @@ print(f"MAE: {results[best_model]['MAE']:.2f}")
 print(f"RMSE: {results[best_model]['RMSE']:.2f}")
 print(f"R²: {results[best_model]['R²']:.2f}")
 
-best_model_object = models[best_model]  # Lấy object model tốt nhất
-joblib.dump(best_model_object, '../src/model/trained_model_fp.pkl')
-joblib.dump(scaler, '../src/scaler/scaler_fp.pkl') 
