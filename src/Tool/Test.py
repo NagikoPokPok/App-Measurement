@@ -148,6 +148,8 @@ METHOD_INFO = {
     """
 }
 
+
+
 # Function to create the input form for LOC, FP, and UCP
 def create_effort_input_form(method):
     input_data = {}
@@ -197,31 +199,73 @@ def create_effort_input_form(method):
                              input_data['pcap'] * input_data['vexp'] * input_data['lexp'] * 
                              input_data['modp'] * input_data['tool'] * input_data['sced'])
     
+
     elif method == 'FP':
-        # Function Point components
+            # 🟢 Bước 1: Giá trị mặc định là 0
+        default_values = {
+            'AFP': 0.0,
+            'EI': 0,
+            'EO': 0,
+            'EQ': 0,
+            'ELF': 0,
+            'IFL': 0,
+            'PDR_AFP': 0.0,
+            'PDR_UFP': 0.0,
+            'NPDR_AFP': 0.0,
+            'NPDU_UFP': 0.0
+            
+        }
+
+        # 🟢 Bước 2: Hiển thị file uploader
+        st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
+        uploaded_file = st.sidebar.file_uploader("Chọn file Excel", type=["xlsx"])
+
+        # 🟢 Bước 3: Nếu có file, đọc và cập nhật default_values
+        if uploaded_file is not None:
+            try:
+                df = pd.read_excel(uploaded_file)
+                expected_cols = {'AFP', 'EI', 'EO', 'EQ', 'ELF', 'IFL', 'PDR_AFP', 'PDR_UFP', 'NPDR_AFP', 'NPDU_UFP'}
+                if not df.empty and expected_cols.issubset(df.columns):
+                    default_values['AFP'] = float(df['AFP'].iloc[0])
+                    default_values['EI'] = int(df['EI'].iloc[0])
+                    default_values['EO'] = int(df['EO'].iloc[0])
+                    default_values['EQ'] = int(df['EQ'].iloc[0])
+                    default_values['ELF'] = int(df['ELF'].iloc[0])
+                    default_values['IFL'] = int(df['IFL'].iloc[0])
+                    default_values['PDR_AFP'] = float(df['PDR_AFP'].iloc[0])
+                    default_values['PDR_UFP'] = float(df['PDR_UFP'].iloc[0])
+                    default_values['NPDR_AFP'] = float(df['NPDR_AFP'].iloc[0])
+                    default_values['NPDU_UFP'] = float(df['NPDU_UFP'].iloc[0])
+            except Exception as e:
+                st.sidebar.error(f"Lỗi khi đọc file: {e}")
+
+        # 🟢 Bước 4: Hiển thị các input với giá trị đã có (0 hoặc từ file)
         st.sidebar.subheader("Function Point Components:")
         col1, col2 = st.sidebar.columns(2)
 
         with col1:
-            input_data['AFP'] = st.number_input('AFP (Adjusted Function Points)', min_value=0.0, value=1.0, help="Adjusted Function Points")
-            input_data['Input'] = st.number_input('Input Count', min_value=0, value=30, help="Number of user inputs")
-            input_data['Output'] = st.number_input('Output Count', min_value=0, value=25, help="Number of user outputs")
-            input_data['Enquiry'] = st.number_input('Enquiry Count', min_value=0, value=15, help="Number of user enquiries")
+            input_data['AFP'] = st.number_input('AFP (Adjusted Function Points)', min_value=0.0, value=default_values['AFP'], help="Adjusted Function Points")
+            input_data['Input'] = st.number_input('Input Count (EI)', min_value=0, value=default_values['EI'], help="Number of user inputs")
+            input_data['Output'] = st.number_input('Output Count (EO)', min_value=0, value=default_values['EO'], help="Number of user outputs")
+            input_data['Enquiry'] = st.number_input('Enquiry Count (EQ)', min_value=0, value=default_values['EQ'], help="Number of user enquiries")
 
         with col2:
-            input_data['File'] = st.number_input('File Count', min_value=0, value=10, help="Number of files")
-            input_data['Interface'] = st.number_input('Interface Count', min_value=0, value=5, help="Number of external interfaces")
+            input_data['File'] = st.number_input('File Count (ELF)', min_value=0, value=default_values['ELF'], help="Number of files")
+            input_data['Interface'] = st.number_input('Interface Count (IFL)', min_value=0, value=default_values['IFL'], help="Number of external interfaces")
         
         # Productivity factors
         st.sidebar.subheader("Productivity Factors:")
-        input_data['PDR_AFP'] = st.number_input('PDR_AFP (Productivity Derived from AFP)', min_value=0.0, value=1.0, help="Productivity derived from Adjusted Function Points")
-        input_data['PDR_UFP'] = st.number_input('PDR_UFP (Productivity Derived from UFP)', min_value=0.0, value=1.0, help="Productivity derived from Unadjusted Function Points")
-        input_data['NPDR_AFP'] = st.number_input('NPDR_AFP (Non-Productivity Derived from AFP)', min_value=0.0, value=0.5, help="Non-productivity derived from Adjusted Function Points")
-        input_data['NPDU_UFP'] = st.number_input('NPDU_UFP (Non-Productivity Derived from UFP)', min_value=0.0, value=0.5, help="Non-productivity derived from Unadjusted Function Points")
-    
+        input_data['PDR_AFP'] = st.sidebar.number_input('PDR_AFP (Productivity Derived from AFP)', min_value=0.0, value=default_values['PDR_AFP'], help="Productivity derived from Adjusted Function Points")
+        input_data['PDR_UFP'] = st.sidebar.number_input('PDR_UFP (Productivity Derived from UFP)', min_value=0.0, value=default_values['PDR_UFP'], help="Productivity derived from Unadjusted Function Points")
+        input_data['NPDR_AFP'] = st.sidebar.number_input('NPDR_AFP (Non-Productivity Derived from AFP)', min_value=0.0, value=default_values['NPDR_AFP'], help="Non-productivity derived from Adjusted Function Points")
+        input_data['NPDU_UFP'] = st.sidebar.number_input('NPDU_UFP (Non-Productivity Derived from UFP)', min_value=0.0, value=default_values['NPDU_UFP'], help="Non-productivity derived from Unadjusted Function Points")
+
+
+
     elif method == 'UCP':
         # Collect actor counts
         st.sidebar.subheader("Actors:")
+
         col1, col2 = st.sidebar.columns(2)
         
         with col1:
@@ -525,7 +569,38 @@ def display_results(pred_effort, method):
     plt.tight_layout()
     st.pyplot(fig)
 
-# Main function for the Streamlit interface
+# ✅ HÀM MỚI: Giao diện nhập thông tin người dùng (đọc từ Excel hoặc nhập tay)
+def input_user_info(method):
+    st.sidebar.markdown("### Thông tin từ file Excel")
+    uploaded_file = st.sidebar.file_uploader("Chọn file Excel", type=["xlsx"])
+
+    if method == 'FP':
+        NAFP, NEI, NEO, NEQ, NELF, NIFL = 0, 0, 0, 0, 0, 0
+        if uploaded_file is not None:
+            df = pd.read_excel(uploaded_file)
+            if not df.empty and {'AFP', 'EI', 'EO', 'EQ', 'ELF', 'IFL'}.issubset(df.columns):
+                NAFP = df['AFP'].iloc[0]
+                NEI = df['EI'].iloc[0]
+                NEO = df['EO'].iloc[0]
+                NEQ = df['EQ'].iloc[0]
+                NELF = df['ELF'].iloc[0]
+                NIFL = df['IFL'].iloc[0]
+            
+        st.sidebar.subheader("Function Point Components:")
+        col1, col2 = st.sidebar.columns(2)
+
+        with col1:
+            AFP = st.number_input('AFP (Adjusted Function Points)', NAFP, help="Adjusted Function Points")
+            EI = st.number_input('Input Count', NEI,  help="Number of user inputs")
+            EO = st.number_input('Output Count', NEO,  help="Number of user outputs")
+            EQ = st.number_input('Enquiry Count', NEQ,  help="Number of user enquiries")
+        with col2:
+            ELF = st.number_input('File Count', NELF,  help="Number of files")
+            IFL = st.number_input('Interface Count', NIFL,  help="Number of external interfaces")
+        return AFP, EI, EO, EQ, ELF, IFL
+    
+
+# =============================
 def main():
     # Title and description
     st.title("Software Project Effort Estimation Tool")
@@ -534,26 +609,29 @@ def main():
     - **Lines of Code (LOC)**: Based on COCOMO model
     - **Function Points (FP)**: Based on function point analysis
     - **Use Case Points (UCP)**: Based on use case complexity
-    
+
     Select an estimation method from the sidebar to get started.
     """)
-    
-    # Sidebar configuration
+
     st.sidebar.title("Estimation Settings")
-    
-    # Select model in sidebar
+
+
+    # Chọn phương pháp estimation
     method = st.sidebar.selectbox("Select Estimation Method", ["LOC", "FP", "UCP"])
-    
-    # Show method information
+
+    # ✅ Gọi hàm xử lý phần nhập thông tin người dùng (Excel hoặc tay)
+    # input_user_info(method)
+
+    # Hiển thị mô tả phương pháp
     with st.expander("About this estimation method", expanded=False):
         st.markdown(METHOD_INFO[method])
-    
-    # Generate the input form based on the selected estimation method
+
+    # Form nhập liệu effort tùy phương pháp
     data = create_effort_input_form(method)
-    
-    # Calculate button
+
+    # Nút tính toán
     if st.sidebar.button("Calculate Effort", type="primary"):
-        with st.spinner('Calculating...'):
+        with st.spinner("Calculating..."):
             pred_effort = predict_effort(data, method)
             
             if pred_effort is not None:
@@ -561,12 +639,12 @@ def main():
                 display_results(pred_effort, method)
             else:
                 st.error("Estimation failed. Please check your inputs and try again.")
-    
-    # Export button
+
+    # Nút export
     if 'pred_effort' in locals():
         if st.download_button(
             label="Export Results",
-            data="",  # Would implement actual export functionality here
+            data="",  # Nếu muốn xuất dữ liệu thật thì thay ở đây
             file_name="effort_estimation.csv",
             mime="text/csv",
         ):
