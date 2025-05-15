@@ -88,21 +88,18 @@ def train_and_save_models(X_train, X_test, y_train, y_test, prefix, scaler):
 def train_loc_model():
     print("\n======= Training LOC Model (NASA93) =======")
     
-    nasa93_path = DATASET_DIR / "nasa93.arff.csv"
+    nasa93_path = DATASET_DIR / "nasa93_converted.xlsx"
     if not nasa93_path.exists():
         print(f"Error: NASA93 dataset not found at {nasa93_path}")
         return False
     
-    nasa93 = pd.read_csv(nasa93_path, sep=';')
+    nasa93 = pd.read_excel(nasa93_path)
     print(f"Number of samples: {nasa93.shape[0]}")
     
-    rating_map = {'vl': 0.5, 'l': 0.7, 'n': 1.0, 'h': 1.15, 'vh': 1.4, 'xh': 1.65}
     cost_drivers = ['rely', 'data', 'cplx', 'time', 'stor', 'virt', 'turn', 
                     'acap', 'aexp', 'pcap', 'vexp', 'lexp', 'modp', 'tool', 'sced']
     
     data = nasa93.copy()
-    for driver in cost_drivers:
-        data[driver] = data[driver].map(rating_map)
     
     X = data.drop(['recordnumber', 'projectname', 'cat2', 'forg', 'center', 'year', 'act_effort', 'mode'], axis=1)
     y = data['act_effort']

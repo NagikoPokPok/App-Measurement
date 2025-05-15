@@ -15,101 +15,50 @@ st.set_page_config(page_title="Software Project Effort Estimation Tool", layout=
 def find_model_files():
     """Search for model, scaler and img files in common locations."""
     script_path = Path(__file__).resolve()
-    possible_base_dirs = [
-        script_path.parent.parent,              # If Tool is at root level
-        script_path.parent,                     # If tool.py is in root
-        script_path.parent.parent.parent        # Original assumption
-    ]
+    base_dir = script_path.parent.parent.parent  # App Measurement directory
     
-    # Try to locate directories in common locations
-    for base_dir in possible_base_dirs:
-        # Look for model directory
-        model_paths = [
-            base_dir / "src" / "model",
-            base_dir / "model",
-            base_dir.parent / "src" / "model"
-        ]
-        
-        # Look for scaler directory
-        scaler_paths = [
-            base_dir / "src" / "scaler",
-            base_dir / "scaler",
-            base_dir.parent / "src" / "scaler"
-        ]
-        
-        # Look for img directory
-        img_paths = [
-            base_dir / "img",
-            base_dir / "src" / "img",
-            base_dir.parent / "img"
-        ]
-        
-        # Check each model path
-        for model_dir in model_paths:
-            if any((model_dir / f"trained_model_{m}.pkl").exists() for m in ["loc", "ucp", "fp"]):
-                # Found model files, now find matching scaler and img dirs
-                for scaler_dir in scaler_paths:
-                    if any((scaler_dir / f"scaler_{m}.pkl").exists() for m in ["loc", "ucp", "fp"]):
-                        for img_dir in img_paths:
-                            if any((img_dir / f"{m}_model_comparison.csv").exists() for m in ["loc", "ucp", "fp"]):
-                                return model_dir, scaler_dir, img_dir
-    
-    # If no files found, return default paths and create directories
-    default_model_dir = script_path.parent.parent / "src" / "model"
-    default_scaler_dir = script_path.parent.parent / "src" / "scaler"
-    default_img_dir = script_path.parent.parent / "img"
+    # Define correct paths relative to base directory
+    model_dir = base_dir / "src" / "model"
+    scaler_dir = base_dir / "src" / "scaler"
+    img_dir = base_dir / "img"
     
     # Create directories if they don't exist
-    default_model_dir.mkdir(parents=True, exist_ok=True)
-    default_scaler_dir.mkdir(parents=True, exist_ok=True)
-    default_img_dir.mkdir(parents=True, exist_ok=True)
+    model_dir.mkdir(parents=True, exist_ok=True)
+    scaler_dir.mkdir(parents=True, exist_ok=True)
+    img_dir.mkdir(parents=True, exist_ok=True)
     
-    return default_model_dir, default_scaler_dir, default_img_dir
-
+    # Check if required files exist
+    missing_files = []
+    for method in ["loc", "ucp", "fp"]:
+        required_files = [
+            (model_dir / f"{method}_linear_model.pkl", "Model"),
+            (model_dir / f"{method}_decision_tree_model.pkl", "Model"),
+            (model_dir / f"{method}_random_forest_model.pkl", "Model"), 
+            (model_dir / f"{method}_gradient_boosting_model.pkl", "Model"),
+            (scaler_dir / f"{method}_scaler.pkl", "Scaler"),
+            (img_dir / f"{method}_model_comparison.csv", "Comparison")
+        ]
+        
+        for file_path, file_type in required_files:
+            if not file_path.exists():
+                missing_files.append(f"{file_type}: {file_path.name}")
+    
+    if missing_files:
+        st.warning(f"""
+        Some required files are missing. Please run Train_Model.py first.
+        
+        Missing files:
+        {chr(10).join('- ' + f for f in missing_files)}
+        
+        Expected locations:
+        - Models: {model_dir}
+        - Scalers: {scaler_dir}
+        - Comparisons: {img_dir}
+        """)
+    
+    return model_dir, scaler_dir, img_dir
 # Find model, scaler and img directories
 MODEL_DIR, SCALER_DIR, IMG_DIR = find_model_files()
-
-# Function to check if model files exist
-def check_model_files():
-    missing_files = []
-    model_files = [
-        MODEL_DIR / "trained_model_loc.pkl",
-        MODEL_DIR / "trained_model_ucp.pkl",
-        MODEL_DIR / "trained_model_fp.pkl",
-        SCALER_DIR / "scaler_loc.pkl",
-        SCALER_DIR / "scaler_ucp.pkl",
-        SCALER_DIR / "scaler_fp.pkl"
-    ]
-    
-    for file in model_files:
-        if not file.exists():
-            missing_files.append(str(file))
-    
-    return missing_files
-
-# Check for missing files
-missing_files = check_model_files()
-if missing_files:
-    st.error("Missing model files. Please run the training scripts first.")
-    st.write("Missing files:")
-    for file in missing_files:
-        st.write(f"- {file}")
-    st.stop()
-
-# Load the trained models
-try:
-    model_loc = joblib.load(MODEL_DIR / "trained_model_loc.pkl")
-    model_ucp = joblib.load(MODEL_DIR / "trained_model_ucp.pkl")
-    model_fp = joblib.load(MODEL_DIR / "trained_model_fp.pkl")
-
-    scaler_loc = joblib.load(SCALER_DIR / "scaler_loc.pkl")
-    scaler_ucp = joblib.load(SCALER_DIR / "scaler_ucp.pkl")
-    scaler_fp = joblib.load(SCALER_DIR / "scaler_fp.pkl")
-    
-    st.sidebar.success("Models loaded successfully!")
-except Exception as e:
-    st.error(f"Error loading models: {e}")
-    st.stop()
 
 # Constants for cost calculation
 COST_PER_HOUR = 50
@@ -411,14 +360,32 @@ def prepare_features(input_data, method):
 # Function to predict the effort using the selected model
 def predict_all_models(input_data, method):
     """Predict effort using all models for the given method"""
-    models = {
-        'linear': joblib.load(MODEL_DIR / f"{method.lower()}_linear_model.pkl"),
-        'decision_tree': joblib.load(MODEL_DIR / f"{method.lower()}_decision_tree_model.pkl"),
-        'random_forest': joblib.load(MODEL_DIR / f"{method.lower()}_random_forest_model.pkl"),
-        'gradient_boosting': joblib.load(MODEL_DIR / f"{method.lower()}_gradient_boosting_model.pkl")
-    }
+    try:
+        models = {
+            'linear': joblib.load(MODEL_DIR / f"{method.lower()}_linear_model.pkl"),
+            'decision_tree': joblib.load(MODEL_DIR / f"{method.lower()}_decision_tree_model.pkl"),
+            'random_forest': joblib.load(MODEL_DIR / f"{method.lower()}_random_forest_model.pkl"),
+            'gradient_boosting': joblib.load(MODEL_DIR / f"{method.lower()}_gradient_boosting_model.pkl")
+        }
+    except FileNotFoundError:
+        st.error(f"""
+        Models for {method} method not found. Please ensure you have:
+        1. Run the training script (Train_Model.py) first
+        2. Models are saved in the correct location: {MODEL_DIR}
+        3. All required model files exist:
+           - {method.lower()}_linear_model.pkl
+           - {method.lower()}_decision_tree_model.pkl
+           - {method.lower()}_random_forest_model.pkl
+           - {method.lower()}_gradient_boosting_model.pkl
+        """)
+        return None
     
-    scaler = joblib.load(SCALER_DIR / f"{method.lower()}_scaler.pkl")
+    try:
+        scaler = joblib.load(SCALER_DIR / f"{method.lower()}_scaler.pkl")
+    except FileNotFoundError:
+        st.error(f"Scaler for {method} method not found. Please run the training script first.")
+        return None
+
     features_df = prepare_features(input_data, method)
     
     predictions = {}
@@ -434,7 +401,6 @@ def predict_all_models(input_data, method):
         predictions[name] = prediction
     
     return predictions
-
 def compare_models(predictions, method):
     """Compare and visualize all model predictions"""
     # Load comparison metrics from training
