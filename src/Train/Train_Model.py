@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -18,6 +20,70 @@ IMG_DIR = BASE_DIR / "img"
 
 print("Starting model training...")
 
+def train_and_save_models(X_train, X_test, y_train, y_test, prefix, scaler):
+    """Train and save all models for a specific measurement type (LOC/UCP/FP)"""
+    
+    models = {
+        'linear': LinearRegression(),
+        'decision_tree': DecisionTreeRegressor(max_depth=5, random_state=42),
+        'random_forest': RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42),
+        'gradient_boosting': GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
+    }
+    
+    results = {}
+    
+    for name, model in models.items():
+        print(f"\nTraining {name.replace('_', ' ').title()}...")
+        model.fit(X_train, y_train)
+        
+        # Make predictions (still in log scale)
+        y_pred = model.predict(X_test)
+        
+        # Calculate metrics in log scale
+        mae = mean_absolute_error(y_test, y_pred)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        r2 = r2_score(y_test, y_pred)
+        
+        # Store both log scale and original scale results
+        results[name] = {
+            'model': model,
+            'metrics': {
+                'MAE (log)': mae,
+                'RMSE (log)': rmse,
+                'R²': r2,
+                'MAE': np.mean(np.abs(np.expm1(y_test) - np.expm1(y_pred))),
+                'RMSE': np.sqrt(np.mean((np.expm1(y_test) - np.expm1(y_pred)) ** 2))
+            }
+        }
+        
+        print(f"{name.replace('_', ' ').title()}:")
+        print(f"  Log scale - MAE: {mae:.2f}, RMSE: {rmse:.2f}, R²: {r2:.2f}")
+        
+        # Save individual model
+        model_path = MODEL_DIR / f"{prefix}_{name}_model.pkl"
+        joblib.dump(model, model_path)
+    
+    # Save scaler
+    scaler_path = SCALER_DIR / f"{prefix}_scaler.pkl"
+    joblib.dump(scaler, scaler_path)
+    
+    # Create and save comparison table
+    comparison_df = pd.DataFrame({
+        name: {
+            'MAE (log)': metrics['metrics']['MAE (log)'],
+            'RMSE (log)': metrics['metrics']['RMSE (log)'],
+            'MAE': metrics['metrics']['MAE'],
+            'RMSE': metrics['metrics']['RMSE'],
+            'R²': metrics['metrics']['R²']
+        }
+        for name, metrics in results.items()
+    }).T
+    
+    comparison_df.to_csv(IMG_DIR / f"{prefix}_model_comparison.csv")
+    print(f"\nModel comparison for {prefix}:")
+    print(comparison_df.round(2))
+    
+    return results
 # 1. Train LOC Model (Project_3.py equivalent)
 def train_loc_model():
     print("\n======= Training LOC Model (NASA93) =======")
@@ -44,43 +110,34 @@ def train_loc_model():
     X['equivphyskloc'] = np.log1p(X['equivphyskloc'])  # Log-transform KLOC
     X['eaf'] = X[cost_drivers].prod(axis=1)  # Effort Adjustment Factor
     
-    # X = pd.get_dummies(X, columns=['mode'], prefix='mode')
-    
     if X.isnull().sum().sum() > 0:
         X = X.dropna()
         y = y[X.index]
     
     y_log = np.log1p(y)
     
+    # Scale features
     scaler = StandardScaler()
     numeric_features = X.select_dtypes(include=['float64', 'int64']).columns
     X_scaled = X.copy()
     X_scaled[numeric_features] = scaler.fit_transform(X[numeric_features])
     
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_log, test_size=0.2, random_state=42)
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_scaled, y_log, test_size=0.2, random_state=42
+    )
     print(f"Training samples: {X_train.shape[0]}")
     print(f"Testing samples: {X_test.shape[0]}")
     
-    gb_model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
-    gb_model.fit(X_train, y_train)
+    # Train and save all models
+    results = train_and_save_models(X_train, X_test, y_train, y_test, 'loc', scaler)
     
-    gb_pred = gb_model.fit(X_train, y_train)
-    
-    gb_pred = gb_model.predict(X_test)
-    gb_pred_original = np.expm1(gb_pred)
-    y_test_original = np.expm1(y_test)
-    
-    gb_mae = mean_absolute_error(y_test_original, gb_pred_original)
-    gb_rmse = np.sqrt(mean_squared_error(y_test_original, gb_pred_original))
-    gb_r2 = r2_score(y_test_original, gb_pred_original)
-    
-    print(f"Gradient Boosting (original scale) - MAE: {gb_mae:.2f}, RMSE: {gb_rmse:.2f}, R²: {gb_r2:.2f}")
-    
-    joblib.dump(gb_model, MODEL_DIR / "trained_model_loc.pkl")
-    joblib.dump(scaler, SCALER_DIR / "scaler_loc.pkl")
-    print(f"Saved LOC model and scaler to disk")
+    # Save feature names for later use
+    feature_names = X.columns.tolist()
+    joblib.dump(feature_names, MODEL_DIR / "loc_feature_names.pkl")
     
     return True
+
 # 2. Train UCP Model (Project_2.py equivalent)
 def train_ucp_model():
     print("\n======= Training UCP Model =======")
@@ -93,7 +150,6 @@ def train_ucp_model():
     
     ucp_data = pd.read_csv(ucp_path)
     print(f"Number of samples: {ucp_data.shape[0]}")
-    print(f"Features: {', '.join(ucp_data.columns)}")
     
     # Data preprocessing
     data = ucp_data.copy()
@@ -133,7 +189,6 @@ def train_ucp_model():
     X = pd.get_dummies(X, columns=categorical_cols, drop_first=False)
     
     # Print feature names for debugging
-    print(f"Features after encoding: {X.columns.tolist()}")
     print(f"Total number of features: {X.shape[1]}")
 
     # Log transform y
@@ -152,37 +207,9 @@ def train_ucp_model():
     print(f"Training samples: {X_train.shape[0]}")
     print(f"Testing samples: {X_test.shape[0]}")
     
-    # Train Gradient Boosting model
-    print("Training Gradient Boosting model...")
-    gb_model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
-    gb_model.fit(X_train, y_train)
-    
-    # Evaluate model
-    gb_pred = gb_model.predict(X_test)
-    gb_mae_log = mean_absolute_error(y_test, gb_pred)
-    gb_rmse_log = np.sqrt(mean_squared_error(y_test, gb_pred))
-    gb_r2_log = r2_score(y_test, gb_pred)
-    
-    # Transform back to original scale for interpretable metrics
-    gb_pred_original = np.expm1(gb_pred)
-    y_test_original = np.expm1(y_test)
-    
-    gb_mae = mean_absolute_error(y_test_original, gb_pred_original)
-    gb_rmse = np.sqrt(mean_squared_error(y_test_original, gb_pred_original))
-    gb_r2 = r2_score(y_test_original, gb_pred_original)
-    
-    print(f"Gradient Boosting (log scale) - MAE: {gb_mae_log:.2f}, RMSE: {gb_rmse_log:.2f}, R²: {gb_r2_log:.2f}")
-    print(f"Gradient Boosting (original scale) - MAE: {gb_mae:.2f}, RMSE: {gb_rmse:.2f}, R²: {gb_r2:.2f}")
-    
-    # Save the model and scaler
-    joblib.dump(gb_model, MODEL_DIR / "trained_model_ucp.pkl")
-    joblib.dump(scaler, SCALER_DIR / "scaler_ucp.pkl")
-    print(f"Saved UCP model and scaler to disk")
-    
-    feature_names = X.columns.tolist()
-    joblib.dump(feature_names, MODEL_DIR / "ucp_feature_names.pkl")
-
+    results = train_and_save_models(X_train, X_test, y_train, y_test, 'ucp', scaler)
     return True
+
 # 3. Train FP Model (Project_4.py equivalent)
 def train_fp_model():
     print("\n======= Training FP Model (China) =======")
@@ -244,23 +271,7 @@ def train_fp_model():
     print(f"Training samples: {X_train.shape[0]}")
     print(f"Testing samples: {X_test.shape[0]}")
     
-    # Train RandomForest model
-    print("Training Random Forest model...")
-    rf_model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
-    rf_model.fit(X_train, y_train)
-    
-    # Evaluate model
-    rf_pred = rf_model.predict(X_test)
-    rf_mae = mean_absolute_error(y_test, rf_pred)
-    rf_rmse = np.sqrt(mean_squared_error(y_test, rf_pred))
-    rf_r2 = r2_score(y_test, rf_pred)
-    
-    print(f"Random Forest - MAE: {rf_mae:.2f}, RMSE: {rf_rmse:.2f}, R²: {rf_r2:.2f}")
-    
-    # Save the model and scaler
-    joblib.dump(rf_model, MODEL_DIR / "trained_model_fp.pkl")
-    joblib.dump(scaler, SCALER_DIR / "scaler_fp.pkl")
-    print(f"Saved FP model and scaler to disk")
+    results = train_and_save_models(X_train, X_test, y_train, y_test, 'fp', scaler)
     
     return True
 
@@ -271,13 +282,16 @@ fp_success = train_fp_model()
 
 if loc_success and ucp_success and fp_success:
     print("\n✅ All models trained and saved successfully!")
-    print(f"Models saved to: {MODEL_DIR}")
-    print(f"Scalers saved to: {SCALER_DIR}")
+    print(f"\nSaved files in {MODEL_DIR}:")
+    for file in MODEL_DIR.glob("*.pkl"):
+        print(f"- {file.name}")
+    
+    print(f"\nSaved files in {SCALER_DIR}:")
+    for file in SCALER_DIR.glob("*.pkl"):
+        print(f"- {file.name}")
+    
+    print(f"\nComparison tables saved in {IMG_DIR}:")
+    for file in IMG_DIR.glob("*_model_comparison.csv"):
+        print(f"- {file.name}")
 else:
     print("\n❌ Some models failed to train. Please check the error messages above.")
-
-# Show saved files
-print("\nSaved files:")
-for dir_path, file_pattern in [(MODEL_DIR, "trained_model_*.pkl"), (SCALER_DIR, "scaler_*.pkl")]:
-    for file in dir_path.glob(file_pattern):
-        print(f"- {file}")

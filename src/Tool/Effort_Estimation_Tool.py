@@ -6,13 +6,14 @@ from fpdf import FPDF
 import tempfile
 import pandas as pd
 from pathlib import Path
+import math 
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Software Project Effort Estimation Tool", layout="wide")
 
 # Dynamic model discovery function
 def find_model_files():
-    """Search for model and scaler files in common locations."""
+    """Search for model, scaler and img files in common locations."""
     script_path = Path(__file__).resolve()
     possible_base_dirs = [
         script_path.parent.parent,              # If Tool is at root level
@@ -20,39 +21,53 @@ def find_model_files():
         script_path.parent.parent.parent        # Original assumption
     ]
     
-    # Try to locate model and scaler directories
+    # Try to locate directories in common locations
     for base_dir in possible_base_dirs:
-        # Look for model directory in common locations
+        # Look for model directory
         model_paths = [
             base_dir / "src" / "model",
             base_dir / "model",
             base_dir.parent / "src" / "model"
         ]
         
-        # Look for scaler directory in common locations
+        # Look for scaler directory
         scaler_paths = [
             base_dir / "src" / "scaler",
             base_dir / "scaler",
             base_dir.parent / "src" / "scaler"
         ]
         
+        # Look for img directory
+        img_paths = [
+            base_dir / "img",
+            base_dir / "src" / "img",
+            base_dir.parent / "img"
+        ]
+        
         # Check each model path
         for model_dir in model_paths:
             if any((model_dir / f"trained_model_{m}.pkl").exists() for m in ["loc", "ucp", "fp"]):
-                # Found a model file, now find matching scaler dir
+                # Found model files, now find matching scaler and img dirs
                 for scaler_dir in scaler_paths:
                     if any((scaler_dir / f"scaler_{m}.pkl").exists() for m in ["loc", "ucp", "fp"]):
-                        return model_dir, scaler_dir
+                        for img_dir in img_paths:
+                            if any((img_dir / f"{m}_model_comparison.csv").exists() for m in ["loc", "ucp", "fp"]):
+                                return model_dir, scaler_dir, img_dir
     
-    # If no models found, return default paths
-    return script_path.parent.parent / "src" / "model", script_path.parent.parent / "src" / "scaler"
+    # If no files found, return default paths and create directories
+    default_model_dir = script_path.parent.parent / "src" / "model"
+    default_scaler_dir = script_path.parent.parent / "src" / "scaler"
+    default_img_dir = script_path.parent.parent / "img"
+    
+    # Create directories if they don't exist
+    default_model_dir.mkdir(parents=True, exist_ok=True)
+    default_scaler_dir.mkdir(parents=True, exist_ok=True)
+    default_img_dir.mkdir(parents=True, exist_ok=True)
+    
+    return default_model_dir, default_scaler_dir, default_img_dir
 
-# Find model and scaler directories
-MODEL_DIR, SCALER_DIR = find_model_files()
-
-# Display paths in sidebar for debugging
-st.sidebar.text(f"Models: {MODEL_DIR}")
-st.sidebar.text(f"Scalers: {SCALER_DIR}")
+# Find model, scaler and img directories
+MODEL_DIR, SCALER_DIR, IMG_DIR = find_model_files()
 
 # Function to check if model files exist
 def check_model_files():
@@ -394,75 +409,118 @@ def prepare_features(input_data, method):
             
         return df
 # Function to predict the effort using the selected model
-def predict_effort(input_data, method):
+def predict_all_models(input_data, method):
+    """Predict effort using all models for the given method"""
+    models = {
+        'linear': joblib.load(MODEL_DIR / f"{method.lower()}_linear_model.pkl"),
+        'decision_tree': joblib.load(MODEL_DIR / f"{method.lower()}_decision_tree_model.pkl"),
+        'random_forest': joblib.load(MODEL_DIR / f"{method.lower()}_random_forest_model.pkl"),
+        'gradient_boosting': joblib.load(MODEL_DIR / f"{method.lower()}_gradient_boosting_model.pkl")
+    }
+    
+    scaler = joblib.load(SCALER_DIR / f"{method.lower()}_scaler.pkl")
+    features_df = prepare_features(input_data, method)
+    
+    predictions = {}
+    for name, model in models.items():
+        # Scale features
+        scaled_features = scaler.transform(features_df)
+        
+        # Make prediction (in log scale)
+        log_prediction = model.predict(scaled_features)
+        
+        # Convert back to original scale
+        prediction = np.expm1(log_prediction[0])
+        predictions[name] = prediction
+    
+    return predictions
+
+def compare_models(predictions, method):
+    """Compare and visualize all model predictions"""
+    # Load comparison metrics from training
     try:
-        # Prepare the features based on the method
-        features_df = prepare_features(input_data, method)
+        comparison_df = pd.read_csv(IMG_DIR / f"{method.lower()}_model_comparison.csv", index_col=0)
         
-        if method == 'LOC':
-            # For LOC model
-            # Log transform KLOC as done in training
-            features_df['equivphyskloc'] = np.log1p(features_df['equivphyskloc'])
-            
-            # Scale the features
-            scaled_features = scaler_loc.transform(features_df)
-            
-            # Make prediction
-            log_prediction = model_loc.predict(scaled_features)
-            
-            # Convert from log scale back to original scale
-            prediction = np.expm1(log_prediction[0])
-            
-        elif method == 'FP':
-            # For FP model
-            # Scale the features
-            scaled_features = scaler_fp.transform(features_df)
-            
-            # Make prediction 
-            log_prediction = model_fp.predict(scaled_features)
-            
-            # Convert from log scale back to original scale
-            prediction = np.expm1(log_prediction[0])
-            
-        elif method == 'UCP':
-            # For UCP model
-            # The challenge with UCP is ensuring the columns match exactly
-            
-            # First we need to get the expected columns from the scaler
-            expected_columns = scaler_ucp.feature_names_in_.tolist() if hasattr(scaler_ucp, 'feature_names_in_') else None
-            
-            if expected_columns:
-                st.sidebar.markdown(f"Expected columns: {expected_columns}")
-                
-                # Fill missing columns with 0
-                for col in expected_columns:
-                    if col not in features_df.columns:
-                        features_df[col] = 0
-                
-                # Select only the expected columns in the right order
-                features_df = features_df[expected_columns]
-            
-            # Scale the features
-            scaled_features = scaler_ucp.transform(features_df)
-            
-            # Make prediction
-            log_prediction = model_ucp.predict(scaled_features)
-            
-            # Convert from log scale back to original scale
-            prediction = np.expm1(log_prediction[0])
-            
-        else:
-            st.error(f"Unknown method: {method}")
-            return None
+        # Define weights for different metrics
+        weights = {
+            'MAE': 0.3,
+            'RMSE': 0.3,
+            'R²': 0.4
+        }
         
-        return prediction
+        # Normalize metrics (lower is better for MAE and RMSE, higher is better for R²)
+        normalized_metrics = pd.DataFrame()
+        
+        # Normalize MAE and RMSE (lower is better)
+        for metric in ['MAE', 'RMSE']:
+            max_val = comparison_df[metric].max()
+            min_val = comparison_df[metric].min()
+            normalized_metrics[metric] = 1 - ((comparison_df[metric] - min_val) / (max_val - min_val))
+        
+        # Normalize R² (higher is better)
+        normalized_metrics['R²'] = (comparison_df['R²'] - comparison_df['R²'].min()) / (comparison_df['R²'].max() - comparison_df['R²'].min())
+        
+        # Calculate weighted score
+        weighted_scores = pd.Series(index=comparison_df.index)
+        for model in comparison_df.index:
+            score = sum(normalized_metrics.loc[model, metric] * weight 
+                       for metric, weight in weights.items())
+            weighted_scores[model] = score
+        
+        # Find best model based on weighted score
+        best_model = weighted_scores.idxmax()
+        best_prediction = predictions[best_model]
+        
+        # Create visualization
+        fig = plt.figure(figsize=(15, 10))
+        
+        # 1. Bar plot of predictions
+        plt.subplot(2, 2, 1)
+        plt.bar(predictions.keys(), predictions.values())
+        plt.title('Effort Predictions by Model')
+        plt.xticks(rotation=45)
+        plt.ylabel('Predicted Effort (hours)')
+        
+        # 2. Model metrics comparison
+        plt.subplot(2, 2, 2)
+        comparison_df[['MAE', 'RMSE']].plot(kind='bar', ax=plt.gca())
+        plt.title('Error Metrics Comparison')
+        plt.xticks(rotation=45)
+        plt.ylabel('Error')
+        
+        # 3. R² scores
+        plt.subplot(2, 2, 3)
+        comparison_df['R²'].plot(kind='bar', color='green')
+        plt.title('R² Score Comparison')
+        plt.xticks(rotation=45)
+        plt.ylabel('R² Score')
+        
+        # 4. Overall model scores
+        plt.subplot(2, 2, 4)
+        weighted_scores.plot(kind='bar', color='purple')
+        plt.title('Overall Model Scores')
+        plt.xticks(rotation=45)
+        plt.ylabel('Weighted Score')
+        
+        plt.tight_layout()
+        
+        # Print detailed comparison
+        print("\nModel Comparison Details:")
+        comparison_details = pd.DataFrame({
+            'MAE': comparison_df['MAE'],
+            'RMSE': comparison_df['RMSE'],
+            'R²': comparison_df['R²'],
+            'Overall Score': weighted_scores
+        })
+        print(comparison_details.round(4))
+        
+        return fig, best_model, best_prediction
         
     except Exception as e:
-        st.error(f"Prediction error: {e}")
-        import traceback
-        st.error(traceback.format_exc())
-        return None
-
+        st.error(f"Error in model comparison: {e}")
+        # Fall back to simple R² comparison if there's an error
+        return None, None, None
+    
 # Function to estimate project metrics (effort, cost, and time)
 def estimate_project_metrics(effort):
     hours = effort
@@ -470,21 +528,68 @@ def estimate_project_metrics(effort):
     months = hours / HOURS_PER_MONTH
     return hours, cost, months
 
+# Function to convert decimal months to months and days format
+def convert_to_months_days(months):
+    """Convert decimal months to months and days format"""
+    full_months = int(months)  # Phần nguyên là số tháng
+    remaining_days = int((months - full_months) * 30)  # Phần thập phân * 30 = số ngày
+    
+    if full_months == 0:
+        if remaining_days == 0:
+            return "0 days"
+        return f"{remaining_days} days"
+    elif remaining_days == 0:
+        return f"{full_months} months"
+    else:
+        return f"{full_months} months {remaining_days} days"
+
+
 # Display results
 def display_results(pred_effort, method):
-    hours, cost, months = estimate_project_metrics(pred_effort)
+    # Get predictions from all models
+    predictions = predict_all_models(pred_effort, method)
     
-    # Create metrics for key values with rounded team size
+    # Compare models and get the best one
+    comparison_fig, best_model, best_prediction = compare_models(predictions, method)
+    
+    # Display all predictions
+    st.subheader("Model Predictions")
+    
+    # Create DataFrame with predictions and reset index to start from 1
+    pred_df = pd.DataFrame({
+        'No': range(1, len(predictions) + 1),  # Add No column starting from 1
+        'Model': predictions.keys(),
+        'Predicted Effort (hours)': predictions.values()
+    })
+    
+    # Reset index to remove the default index
+    pred_df.set_index('No', inplace=True)
+    
+    # Display the DataFrame
+    st.dataframe(pred_df)
+    
+    # Display model comparison plot
+    st.subheader("Model Comparison")
+    st.pyplot(comparison_fig)
+    
+    # Display best model info
+    st.success(f"Best performing model: {best_model.replace('_', ' ').title()}")
+    
+    # Calculate project metrics using the best model's prediction
+    st.subheader("Project Metrics (Based on Best Model)")
+    hours, cost, months = estimate_project_metrics(best_prediction)
+    
+    # Display metrics using columns
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Effort (Hours)", f"{hours:.0f}")
     col2.metric("Cost (USD)", f"${cost:,.2f}")
-    col3.metric("Duration (Months)", f"{months:.1f}")
-    col4.metric("Team Size", f"{round(months)} people")  # Rounded to whole number
+    col3.metric("Duration", convert_to_months_days(months))
+    col4.metric("Team Size", f"{math.ceil(months)} people")
     
-    # Create a detailed breakdown with timeline details
+    # Create detailed breakdown
     st.subheader("Project Details")
     
-    # Calculate phase durations (in months)
+    # Calculate phase durations
     requirements_duration = months * 0.1
     design_duration = months * 0.2
     development_duration = months * 0.4
@@ -511,14 +616,14 @@ def display_results(pred_effort, method):
             f"{hours:.0f} hours",
             f"${COST_PER_HOUR:.2f}/hour",
             f"${cost:,.2f}",
-            f"{months:.1f} months",
-            f"{round(months)} people",
+            convert_to_months_days(months),
+            f"{math.ceil(months)} people",
             "",
-            f"{requirements_duration:.1f} months ({requirements_duration/months*100:.0f}%)",
-            f"{design_duration:.1f} months ({design_duration/months*100:.0f}%)",
-            f"{development_duration:.1f} months ({development_duration/months*100:.0f}%)",
-            f"{testing_duration:.1f} months ({testing_duration/months*100:.0f}%)",
-            f"{deployment_duration:.1f} months ({deployment_duration/months*100:.0f}%)"
+            f"{convert_to_months_days(requirements_duration)} ({requirements_duration/months*100:.0f}%)",
+            f"{convert_to_months_days(design_duration)} ({design_duration/months*100:.0f}%)",
+            f"{convert_to_months_days(development_duration)} ({development_duration/months*100:.0f}%)",
+            f"{convert_to_months_days(testing_duration)} ({testing_duration/months*100:.0f}%)",
+            f"{convert_to_months_days(deployment_duration)} ({deployment_duration/months*100:.0f}%)"
         ]
     }
     st.table(pd.DataFrame(details))
@@ -532,7 +637,7 @@ def display_results(pred_effort, method):
     ax1.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
     ax1.set_title('Cost Breakdown')
     
-    # Timeline Bar Chart with detailed information
+    # Timeline Bar Chart
     phases = ['Requirements', 'Design', 'Development', 'Testing', 'Deployment']
     phase_times = [requirements_duration, design_duration, development_duration, 
                   testing_duration, deployment_duration]
@@ -540,19 +645,21 @@ def display_results(pred_effort, method):
     
     # Create horizontal bar chart
     bars = ax2.barh(phases, phase_times, color=colors)
-    ax2.set_xlabel('Months')
+    ax2.set_xlabel('Duration (months)')
     ax2.set_title('Project Timeline')
     
-    # Add duration labels on the bars
+    # Add duration labels on the bars with just months and percentage
     for i, bar in enumerate(bars):
         width = bar.get_width()
+        percentage = phase_times[i]/months*100
         ax2.text(width/2, bar.get_y() + bar.get_height()/2,
-                f'{phase_times[i]:.1f}m ({phase_times[i]/months*100:.0f}%)',
+                f'{phase_times[i]:.1f}m ({percentage:.0f}%)',
                 ha='center', va='center')
     
     plt.tight_layout()
     st.pyplot(fig)
 
+# Export PDF report
 def export_pdf_report(input_data, pred_effort, method):
     # Create PDF object
     pdf = FPDF()
@@ -651,10 +758,10 @@ def export_pdf_report(input_data, pred_effort, method):
     results = [
         ('Total Effort', f"{hours:.0f} hours"),
         ('Total Cost', f"${cost:,.2f}"),
-        ('Project Duration', f"{months:.1f} months"),
-        ('Team Size', f"{round(months)} people"),
+        ('Project Duration', convert_to_months_days(months)),
+        ('Team Size', f"{math.ceil(months)} people"),
     ]
-    
+
     for metric, value in results:
         pdf.cell(col_width[0], 10, metric, 1, 0, 'L')
         pdf.cell(col_width[1], 10, value, 1, 1, 'L')
@@ -679,7 +786,7 @@ def export_pdf_report(input_data, pred_effort, method):
     for phase, duration in phases.items():
         percentage = (duration/months) * 100
         pdf.cell(col_width[0], 10, phase, 1, 0, 'L')
-        pdf.cell(col_width[1], 10, f"{duration:.1f} months ({percentage:.0f}%)", 1, 1, 'L')
+        pdf.cell(col_width[1], 10, f"{convert_to_months_days(duration)} ({percentage:.0f}%)", 1, 1, 'L')
     
     # Cost breakdown table
     pdf.ln(10)
@@ -717,13 +824,14 @@ def export_pdf_report(input_data, pred_effort, method):
         colors = ['#FF9999', '#66B2FF', '#99FF99', '#FFCC99', '#C2C2F0']
         
         bars = ax2.barh(phase_names, phase_durations, color=colors)
-        ax2.set_xlabel('Months')
+        ax2.set_xlabel('Duration (months)')
         ax2.set_title('Project Timeline')
         
         for i, bar in enumerate(bars):
             width = bar.get_width()
+            percentage = phase_durations[i]/months*100
             ax2.text(width/2, bar.get_y() + bar.get_height()/2,
-                    f'{phase_durations[i]:.1f}m ({phase_durations[i]/months*100:.0f}%)',
+                    f'{phase_durations[i]:.1f}m ({percentage:.0f}%)',
                     ha='center', va='center')
         
         plt.tight_layout()
@@ -735,7 +843,8 @@ def export_pdf_report(input_data, pred_effort, method):
         pdf.image(tmp_file.name, x=10, y=30, w=190)
     
     return pdf
-# Main function for the Streamlit interface
+
+# Main function
 def main():
     # Title and description
     st.title("Software Project Effort Estimation Tool")
@@ -764,31 +873,29 @@ def main():
     # Calculate button
     if st.sidebar.button("Calculate Effort", type="primary"):
         with st.spinner('Calculating...'):
-            pred_effort = predict_effort(data, method)
+            # Get predictions from all models
+            predictions = predict_all_models(data, method)
             
-            if pred_effort is not None:
-                st.success(f"Estimation completed using {method} method!")
-                display_results(pred_effort, method)
-            else:
-                st.error("Estimation failed. Please check your inputs and try again.")
-    
-    if pred_effort is not None:
-        st.success(f"Estimation completed using {method} method!")
-        display_results(pred_effort, method)
-        
-        # Generate PDF report
-        pdf = export_pdf_report(data, pred_effort, method)
-        
-        # Save PDF to bytes
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
-        
-        # Download button for PDF
-        st.download_button(
-            label="Export Results (PDF)",
-            data=pdf_bytes,
-            file_name=f"effort_estimation_{method.lower()}.pdf",
-            mime="application/pdf"
-        )
+            # Compare models and get the best prediction
+            comparison_fig, best_model, best_prediction = compare_models(predictions, method)
+            
+            # Display results
+            display_results(data, method)
+            st.success(f"Estimation completed using {method} method!")
+            
+            # Generate PDF report using best prediction
+            pdf = export_pdf_report(data, best_prediction, method)
+            
+            # Save PDF to bytes
+            pdf_bytes = pdf.output(dest='S').encode('latin-1')
+            
+            # Download button for PDF
+            st.download_button(
+                label="Export Results (PDF)",
+                data=pdf_bytes,
+                file_name=f"effort_estimation_{method.lower()}.pdf",
+                mime="application/pdf"
+            )
 
 if __name__ == "__main__":
     main()

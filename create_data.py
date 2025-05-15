@@ -23,21 +23,21 @@ def augment_data(input_file, output_file, total_rows=10000):
     synthetic_data['Effort'] = synthetic_predicted_effort
     synthetic_data['N_effort'] = synthetic_data['Effort'] * 1.2  # Ví dụ, N_effort là Effort * 1.2
 
-    # Loại bỏ các dòng có giá trị "Effort" âm
-    synthetic_data = synthetic_data[synthetic_data['Effort'] >= 0]
+    # # Loại bỏ các dòng có giá trị "Effort" âm
+    # synthetic_data = synthetic_data[synthetic_data['Effort'] >= 0]
 
-    # Kiểm tra số dòng dữ liệu sau khi loại bỏ
-    remaining_rows = total_rows - synthetic_data.shape[0]
+    # # Kiểm tra số dòng dữ liệu sau khi loại bỏ
+    # remaining_rows = total_rows - synthetic_data.shape[0]
 
-    # Nếu có ít dòng hơn mong đợi, thêm dữ liệu mới để bù vào
-    while synthetic_data.shape[0] < total_rows:
-        missing_rows_count = total_rows - synthetic_data.shape[0]
-        new_synthetic_data = X.sample(n=missing_rows_count, replace=True, random_state=42)
-        new_predicted_effort = model.predict(new_synthetic_data)
-        new_synthetic_data['Effort'] = new_predicted_effort
-        new_synthetic_data['N_effort'] = new_synthetic_data['Effort'] * 1.2
-        new_synthetic_data = new_synthetic_data[new_synthetic_data['Effort'] >= 0]
-        synthetic_data = pd.concat([synthetic_data, new_synthetic_data], ignore_index=True)
+    # # Nếu có ít dòng hơn mong đợi, thêm dữ liệu mới để bù vào
+    # while synthetic_data.shape[0] < total_rows:
+    #     missing_rows_count = total_rows - synthetic_data.shape[0]
+    #     new_synthetic_data = X.sample(n=missing_rows_count, replace=True, random_state=42)
+    #     new_predicted_effort = model.predict(new_synthetic_data)
+    #     new_synthetic_data['Effort'] = new_predicted_effort
+    #     new_synthetic_data['N_effort'] = new_synthetic_data['Effort'] * 1.2
+    #     new_synthetic_data = new_synthetic_data[new_synthetic_data['Effort'] >= 0]
+    #     synthetic_data = pd.concat([synthetic_data, new_synthetic_data], ignore_index=True)
 
     # Tạo ID mới cho các dòng dữ liệu giả
     new_ids = range(china_data['ID'].max() + 1, china_data['ID'].max() + 1 + synthetic_data.shape[0])
@@ -55,4 +55,4 @@ def augment_data(input_file, output_file, total_rows=10000):
     print(f"File dữ liệu mới đã được lưu tại {output_file}")
 
 # Gọi hàm augment_data với các tham số input và output của bạn
-augment_data('dataset/china.csv', 'dataset/augmented_china_data.csv', total_rows=10000)
+augment_data('dataset/china.csv', 'dataset/augmented_china_data_2.csv', total_rows=10000)
