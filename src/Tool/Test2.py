@@ -7,6 +7,29 @@ import tempfile
 import pandas as pd
 from pathlib import Path
 import math 
+import json
+from datetime import datetime
+from pathlib import Path
+
+HISTORY_FILE = Path("history.json")
+
+def load_history():
+    if HISTORY_FILE.exists():
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_history_entry(method, input_data, output_data):
+    history = load_history()
+    new_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "method": method,
+        "input": input_data,
+        "output": output_data
+    }
+    history.append(new_entry)
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Software Project Effort Estimation Tool", layout="wide")
@@ -113,8 +136,14 @@ METHOD_INFO = {
     """
 }
 
+def safe_int(val, default=0):
+    try:
+        return int(float(val))
+    except:
+        return default
+
 # Function to create the input form for LOC, FP, and UCP
-def create_effort_input_form(method):
+def create_effort_input_form(method, prefill_data=None):
     input_data = {}
     
     if method == 'LOC':
@@ -137,6 +166,10 @@ def create_effort_input_form(method):
             'tool': 1.0,
             'sced': 1.0
         }
+        if prefill_data:
+            for k in default_values.keys():
+                if k in prefill_data:
+                    default_values[k] = prefill_data[k]
 
         # 🟢 Bước 2: Hiển thị file uploader
         st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
@@ -242,8 +275,20 @@ def create_effort_input_form(method):
             'PDR_UFP': 0.0,
             'NPDR_AFP': 0.0,
             'NPDU_UFP': 0.0
-            
         }
+        key_map = {
+        'EI': 'Input',
+        'EO': 'Output',
+        'EQ': 'Enquiry',
+        'ELF': 'File',
+        'IFL': 'Interface'
+        }
+
+        if prefill_data:
+            for k in default_values.keys():
+                mapped_key = key_map.get(k, k)
+                if mapped_key in prefill_data:
+                    default_values[k] = prefill_data[mapped_key]
 
         # 🟢 Bước 2: Hiển thị file uploader
         st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
@@ -274,13 +319,12 @@ def create_effort_input_form(method):
 
         with col1:
             input_data['AFP'] = st.number_input('AFP (Adjusted Function Points)', min_value=0.0, value=default_values['AFP'], help="Adjusted Function Points")
-            input_data['Input'] = st.number_input('Input Count (EI)', min_value=0, value=default_values['EI'], help="Number of user inputs")
-            input_data['Output'] = st.number_input('Output Count (EO)', min_value=0, value=default_values['EO'], help="Number of user outputs")
-            input_data['Enquiry'] = st.number_input('Enquiry Count (EQ)', min_value=0, value=default_values['EQ'], help="Number of user enquiries")
-
+            input_data['Input'] = st.number_input('Input Count (EI)', min_value=0, value=int(default_values['EI']), help="Number of user inputs")
+            input_data['Output'] = st.number_input('Output Count (EO)', min_value=0, value=int(default_values['EO']), help="Number of user outputs")
+            input_data['Enquiry'] = st.number_input('Enquiry Count (EQ)', min_value=0, value=int(default_values['EQ']), help="Number of user enquiries")
         with col2:
-            input_data['File'] = st.number_input('File Count (ELF)', min_value=0, value=default_values['ELF'], help="Number of files")
-            input_data['Interface'] = st.number_input('Interface Count (IFL)', min_value=0, value=default_values['IFL'], help="Number of external interfaces")
+            input_data['File'] = st.number_input('File Count (ELF)', min_value=0, value=int(default_values['ELF']), help="Number of files")
+            input_data['Interface'] = st.number_input('Interface Count (IFL)', min_value=0, value=int(default_values['IFL']), help="Number of external interfaces")
         
         # Productivity factors
         st.sidebar.subheader("Productivity Factors:")
@@ -305,6 +349,10 @@ def create_effort_input_form(method):
             'Methodology': 'Waterfall',
             'ApplicationType': 'Business Application'
         }
+        if prefill_data:
+            for k in default_values.keys():
+                if k in prefill_data:
+                    default_values[k] = prefill_data[k]
 
         # 🟢 Bước 2: Hiển thị file uploader
         st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
@@ -321,7 +369,6 @@ def create_effort_input_form(method):
                 st.sidebar.error(f"Lỗi khi đọc file: {e}")
 
         # 🟢 Bước 3: Hiển thị các input trong sidebar
-        input_data = {}
 
         st.sidebar.subheader("Actors:")
         input_data['Simple Actors'] = st.sidebar.number_input(
@@ -915,49 +962,77 @@ def export_pdf_report(input_data, pred_effort, method):
     
     return pdf
 
+def load_history_cached():
+    # Luôn đọc lại file để tránh cache
+    HISTORY_FILE = Path("history.json")
+    if HISTORY_FILE.exists():
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
 # Main function
 def main():
-    # Title and description
     st.title("Software Project Effort Estimation Tool")
     st.markdown("""
     This tool helps you estimate the effort required for software development projects using different estimation methods:
-    - **Lines of Code (LOC)**: Based on COCOMO model
-    - **Function Points (FP)**: Based on function point analysis
-    - **Use Case Points (UCP)**: Based on use case complexity
-    
-    Select an estimation method from the sidebar to get started.
+    - **Lines of Code (LOC)**
+    - **Function Points (FP)**
+    - **Use Case Points (UCP)**
     """)
-    
-    # Sidebar configuration
+
     st.sidebar.title("Estimation Settings")
-    
-    # Select model in sidebar
+
+    # Chọn phương pháp
     method = st.sidebar.selectbox("Select Estimation Method", ["LOC", "FP", "UCP"])
-    
-    # Show method information
+
+    # Hiển thị thông tin phương pháp
     with st.expander("About this estimation method", expanded=False):
         st.markdown(METHOD_INFO[method])
-    
-    # Generate the input form based on the selected estimation method
-    data = create_effort_input_form(method)
-    
-    # Calculate button
+
+    # Load lịch sử
+    history = load_history()
+
+    prefill_data = None
+    if history:
+        # Lọc và sắp xếp dự án theo method, thời gian giảm dần
+        filtered_projects = [item for item in history if item['method'] == method]
+        filtered_projects.sort(key=lambda x: datetime.fromisoformat(x['timestamp']), reverse=True)
+
+        # Tạo options với định dạng thời gian bạn muốn
+        options = [
+            f"{i+1}. {datetime.fromisoformat(item['timestamp']).strftime('%d-%m-%Y %Hh%M')} ({item['method']})"
+            for i, item in enumerate(filtered_projects)
+        ]
+
+        if options:
+            selected_option = st.sidebar.selectbox(f"Load input from previous {method} project", options)
+            selected_index = options.index(selected_option)
+            prefill_data = filtered_projects[selected_index]['input']
+
+    # Tạo form với dữ liệu có thể đã tiền điền
+    data = create_effort_input_form(method, prefill_data)
+
+    # Nút tính toán
     if st.sidebar.button("Calculate Effort", type="primary"):
         with st.spinner('Calculating...'):
-            # Get predictions from all models
             predictions = predict_all_models(data, method)
-            
-            # Compare models and get the best prediction
             comparison_fig, best_model, best_prediction = compare_models(predictions, method)
-            
-            # Display results
             display_results(data, method)
             st.success(f"Estimation completed using {method} method!")
-            
-            # Generate PDF report using best prediction
+
             pdf = export_pdf_report(data, best_prediction, method)
+
+            output_data = {
+                "effort_hours": best_prediction,
+                "cost_usd": best_prediction * COST_PER_HOUR,
+                "duration_months": best_prediction / HOURS_PER_MONTH,
+                "best_model": best_model
+            }
+            save_history_entry(method, data, output_data)
+
+            # Cập nhật session_state history
+            st.session_state['history'] = load_history_cached()
             
-            # Save PDF to bytes
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
             
             # Download button for PDF
@@ -967,6 +1042,14 @@ def main():
                 file_name=f"effort_estimation_{method.lower()}.pdf",
                 mime="application/pdf"
             )
+
+    # Hiển thị lịch sử dạng bảng trong sidebar (tuỳ chọn)
+    with st.sidebar.expander("📜 View Project History"):
+        if history:
+            df = pd.DataFrame(history)
+            st.dataframe(df)
+        else:
+            st.info("No history found yet.")
 
 if __name__ == "__main__":
     main()
