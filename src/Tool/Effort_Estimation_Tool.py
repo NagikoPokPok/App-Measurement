@@ -2,7 +2,8 @@ import streamlit as st
 import joblib
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+from fpdf import FPDF
+import tempfile
 import pandas as pd
 from pathlib import Path
 
@@ -551,7 +552,189 @@ def display_results(pred_effort, method):
     
     plt.tight_layout()
     st.pyplot(fig)
+
+def export_pdf_report(input_data, pred_effort, method):
+    # Create PDF object
+    pdf = FPDF()
+    pdf.add_page()
     
+    # Title
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(0, 10, 'Software Project Effort Estimation Report', 0, 1, 'C')
+    pdf.ln(10)
+    
+    # Input Parameters Table
+    pdf.set_font('Arial', 'B', 14)
+    pdf.cell(0, 10, 'Input Parameters', 0, 1, 'L')
+    
+    # Table header
+    pdf.set_font('Arial', 'B', 12)
+    col_width = [100, 90]  # Width for parameter and value columns
+    
+    # Table headers with borders
+    pdf.cell(col_width[0], 10, 'Parameter', 1, 0, 'C')
+    pdf.cell(col_width[1], 10, 'Value', 1, 1, 'C')
+    
+    # Table content
+    pdf.set_font('Arial', '', 11)
+    if method == 'LOC':
+        params = [
+            ('KLOC', f"{input_data['equivphyskloc']:.1f}"),
+            ('Development Mode', "Organic" if input_data['mode_organic'] else 
+                               "Semi-detached" if input_data['mode_semidetached'] else 
+                               "Embedded"),
+            ('Required Reliability', f"{input_data['rely']:.2f}"),
+            ('Database Size', f"{input_data['data']:.2f}"),
+            ('Product Complexity', f"{input_data['cplx']:.2f}"),
+            ('Time Constraint', f"{input_data['time']:.2f}"),
+            ('Storage Constraint', f"{input_data['stor']:.2f}"),
+            ('Platform Volatility', f"{input_data['virt']:.2f}"),
+            ('Turnaround Time', f"{input_data['turn']:.2f}"),
+            ('Analyst Capability', f"{input_data['acap']:.2f}"),
+            ('Analyst Experience', f"{input_data['aexp']:.2f}"),
+            ('Programmer Capability', f"{input_data['pcap']:.2f}"),
+            ('VM Experience', f"{input_data['vexp']:.2f}"),
+            ('Language Experience', f"{input_data['lexp']:.2f}"),
+            ('Modern Practices', f"{input_data['modp']:.2f}"),
+            ('Software Tools', f"{input_data['tool']:.2f}"),
+            ('Schedule Constraint', f"{input_data['sced']:.2f}")
+        ]
+    
+    elif method == 'FP':
+        params = [
+            ('AFP', f"{input_data['AFP']:.1f}"),
+            ('Input Count', str(input_data['Input'])),
+            ('Output Count', str(input_data['Output'])),
+            ('Enquiry Count', str(input_data['Enquiry'])),
+            ('File Count', str(input_data['File'])),
+            ('Interface Count', str(input_data['Interface'])),
+            ('PDR_AFP', f"{input_data['PDR_AFP']:.2f}"),
+            ('PDR_UFP', f"{input_data['PDR_UFP']:.2f}"),
+            ('NPDR_AFP', f"{input_data['NPDR_AFP']:.2f}"),
+            ('NPDU_UFP', f"{input_data['NPDU_UFP']:.2f}")
+        ]
+    
+    elif method == 'UCP':
+        params = [
+            ('Simple Actors', str(input_data['Simple Actors'])),
+            ('Average Actors', str(input_data['Average Actors'])),
+            ('Complex Actors', str(input_data['Complex Actors'])),
+            ('Simple Use Cases', str(input_data['Simple UC'])),
+            ('Average Use Cases', str(input_data['Average UC'])),
+            ('Complex Use Cases', str(input_data['Complex UC'])),
+            ('TCF', f"{input_data['TCF']:.5f}"),
+            ('ECF', f"{input_data['ECF']:.5f}"),
+            ('Language', input_data['Language']),
+            ('Methodology', input_data['Methodology']),
+            ('Application Type', input_data['ApplicationType'])
+        ]
+
+    # Print table rows with borders
+    for param, value in params:
+        pdf.cell(col_width[0], 10, param, 1, 0, 'L')
+        pdf.cell(col_width[1], 10, str(value), 1, 1, 'L')
+    
+    # Results section
+    pdf.add_page()
+    pdf.set_font('Arial', 'B', 14)
+    pdf.cell(0, 10, 'Estimation Results', 0, 1, 'L')
+    
+    # Calculate metrics
+    hours, cost, months = estimate_project_metrics(pred_effort)
+    
+    # Results table
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(col_width[0], 10, 'Metric', 1, 0, 'C')
+    pdf.cell(col_width[1], 10, 'Value', 1, 1, 'C')
+    
+    pdf.set_font('Arial', '', 11)
+    results = [
+        ('Total Effort', f"{hours:.0f} hours"),
+        ('Total Cost', f"${cost:,.2f}"),
+        ('Project Duration', f"{months:.1f} months"),
+        ('Team Size', f"{round(months)} people"),
+    ]
+    
+    for metric, value in results:
+        pdf.cell(col_width[0], 10, metric, 1, 0, 'L')
+        pdf.cell(col_width[1], 10, value, 1, 1, 'L')
+    
+    # Phase breakdown table
+    pdf.ln(10)
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 10, 'Phase Breakdown', 0, 1, 'L')
+    
+    pdf.cell(col_width[0], 10, 'Phase', 1, 0, 'C')
+    pdf.cell(col_width[1], 10, 'Duration', 1, 1, 'C')
+    
+    pdf.set_font('Arial', '', 11)
+    phases = {
+        'Requirements': months * 0.1,
+        'Design': months * 0.2,
+        'Development': months * 0.4,
+        'Testing': months * 0.2,
+        'Deployment': months * 0.1
+    }
+    
+    for phase, duration in phases.items():
+        percentage = (duration/months) * 100
+        pdf.cell(col_width[0], 10, phase, 1, 0, 'L')
+        pdf.cell(col_width[1], 10, f"{duration:.1f} months ({percentage:.0f}%)", 1, 1, 'L')
+    
+    # Cost breakdown table
+    pdf.ln(10)
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 10, 'Cost Breakdown', 0, 1, 'L')
+    
+    pdf.cell(col_width[0], 10, 'Category', 1, 0, 'C')
+    pdf.cell(col_width[1], 10, 'Amount', 1, 1, 'C')
+    
+    pdf.set_font('Arial', '', 11)
+    costs = [
+        ('Development', (cost * 0.7, 70)),
+        ('Testing', (cost * 0.2, 20)),
+        ('Management', (cost * 0.1, 10))
+    ]
+    
+    for category, (amount, percent) in costs:
+        pdf.cell(col_width[0], 10, category, 1, 0, 'L')
+        pdf.cell(col_width[1], 10, f"${amount:,.2f} ({percent}%)", 1, 1, 'L')
+    
+    # Add charts
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+        # Create figure with charts
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+        
+        # Cost Breakdown Pie Chart
+        labels = ['Development', 'Testing', 'Management']
+        sizes = [cost * 0.7, cost * 0.2, cost * 0.1]
+        ax1.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        ax1.set_title('Cost Breakdown')
+        
+        # Timeline Bar Chart
+        phase_names = list(phases.keys())
+        phase_durations = list(phases.values())
+        colors = ['#FF9999', '#66B2FF', '#99FF99', '#FFCC99', '#C2C2F0']
+        
+        bars = ax2.barh(phase_names, phase_durations, color=colors)
+        ax2.set_xlabel('Months')
+        ax2.set_title('Project Timeline')
+        
+        for i, bar in enumerate(bars):
+            width = bar.get_width()
+            ax2.text(width/2, bar.get_y() + bar.get_height()/2,
+                    f'{phase_durations[i]:.1f}m ({phase_durations[i]/months*100:.0f}%)',
+                    ha='center', va='center')
+        
+        plt.tight_layout()
+        plt.savefig(tmp_file.name)
+        plt.close()
+        
+        # Add charts to PDF
+        pdf.add_page()
+        pdf.image(tmp_file.name, x=10, y=30, w=190)
+    
+    return pdf
 # Main function for the Streamlit interface
 def main():
     # Title and description
@@ -589,15 +772,23 @@ def main():
             else:
                 st.error("Estimation failed. Please check your inputs and try again.")
     
-    # Export button
-    if 'pred_effort' in locals():
-        if st.download_button(
-            label="Export Results",
-            data="",  # Would implement actual export functionality here
-            file_name="effort_estimation.csv",
-            mime="text/csv",
-        ):
-            st.success("Results exported successfully!")
+    if pred_effort is not None:
+        st.success(f"Estimation completed using {method} method!")
+        display_results(pred_effort, method)
+        
+        # Generate PDF report
+        pdf = export_pdf_report(data, pred_effort, method)
+        
+        # Save PDF to bytes
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        
+        # Download button for PDF
+        st.download_button(
+            label="Export Results (PDF)",
+            data=pdf_bytes,
+            file_name=f"effort_estimation_{method.lower()}.pdf",
+            mime="application/pdf"
+        )
 
 if __name__ == "__main__":
     main()
