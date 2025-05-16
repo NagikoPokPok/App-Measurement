@@ -1,2 +1,4 @@
 src/Tool/.env
 src/Tool/__pycache__/AI.cpython-312.pyc
+src/Tool/history.json
+src/Tool/__pycache__/history_manager.cpython-312.pyc

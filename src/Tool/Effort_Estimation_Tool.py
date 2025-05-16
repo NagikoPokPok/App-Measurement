@@ -2,12 +2,15 @@ import streamlit as st
 import joblib
 import numpy as np
 import matplotlib.pyplot as plt
-from fpdf import FPDF
+import math 
 import tempfile
 import pandas as pd
+
+from fpdf import FPDF
 from pathlib import Path
+from datetime import datetime
 from AI import ProjectAnalyzer, add_ai_analysis_section
-import math 
+from history_manager import load_history, load_history_cached, save_history_entry
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Software Project Effort Estimation Tool", layout="wide")
@@ -114,9 +117,18 @@ METHOD_INFO = {
     """
 }
 
+def safe_int(val, default=0):
+    try:
+        return int(float(val))
+    except:
+        return default
+    
 # Function to create the input form for LOC, FP, and UCP
-def create_effort_input_form(method):
+def create_effort_input_form(method, prefill_data=None):
     input_data = {}
+    
+    if prefill_data is None:
+        prefill_data = {}
     
     if method == 'LOC':
         # 🟢 Bước 1: Giá trị mặc định là 0
@@ -138,6 +150,11 @@ def create_effort_input_form(method):
             'tool': 1.0,
             'sced': 1.0
         }
+
+        if prefill_data:
+            for k in default_values.keys():
+                if k in prefill_data:
+                    default_values[k] = prefill_data[k]
 
         # 🟢 Bước 2: Hiển thị file uploader
         st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
@@ -243,8 +260,21 @@ def create_effort_input_form(method):
             'PDR_UFP': 0.0,
             'NPDR_AFP': 0.0,
             'NPDU_UFP': 0.0
-            
         }
+
+        key_map = {
+        'EI': 'Input',
+        'EO': 'Output',
+        'EQ': 'Enquiry',
+        'ELF': 'File',
+        'IFL': 'Interface'
+        }
+
+        if prefill_data:
+            for k in default_values.keys():
+                mapped_key = key_map.get(k, k)
+                if mapped_key in prefill_data:
+                    default_values[k] = prefill_data[mapped_key]
 
         # 🟢 Bước 2: Hiển thị file uploader
         st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
@@ -275,13 +305,13 @@ def create_effort_input_form(method):
 
         with col1:
             input_data['AFP'] = st.number_input('AFP (Adjusted Function Points)', min_value=0.0, value=default_values['AFP'], help="Adjusted Function Points")
-            input_data['Input'] = st.number_input('Input Count (EI)', min_value=0, value=default_values['EI'], help="Number of user inputs")
-            input_data['Output'] = st.number_input('Output Count (EO)', min_value=0, value=default_values['EO'], help="Number of user outputs")
-            input_data['Enquiry'] = st.number_input('Enquiry Count (EQ)', min_value=0, value=default_values['EQ'], help="Number of user enquiries")
-
+            input_data['Input'] = st.number_input('Input Count (EI)', min_value=0, value=int(default_values['EI']), help="Number of user inputs")
+            input_data['Output'] = st.number_input('Output Count (EO)', min_value=0, value=int(default_values['EO']), help="Number of user outputs")
+            input_data['Enquiry'] = st.number_input('Enquiry Count (EQ)', min_value=0, value=int(default_values['EQ']), help="Number of user enquiries")
+        
         with col2:
-            input_data['File'] = st.number_input('File Count (ELF)', min_value=0, value=default_values['ELF'], help="Number of files")
-            input_data['Interface'] = st.number_input('Interface Count (IFL)', min_value=0, value=default_values['IFL'], help="Number of external interfaces")
+            input_data['File'] = st.number_input('File Count (ELF)', min_value=0, value=int(default_values['ELF']), help="Number of files")
+            input_data['Interface'] = st.number_input('Interface Count (IFL)', min_value=0, value=int(default_values['IFL']), help="Number of external interfaces")
         
         # Productivity factors
         st.sidebar.subheader("Productivity Factors:")
@@ -306,6 +336,11 @@ def create_effort_input_form(method):
             'Methodology': 'Waterfall',
             'ApplicationType': 'Business Application'
         }
+
+        if prefill_data:
+            for k in default_values.keys():
+                if k in prefill_data:
+                    default_values[k] = prefill_data[k]
 
         # 🟢 Bước 2: Hiển thị file uploader
         st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
@@ -507,6 +542,8 @@ def predict_all_models(input_data, method):
         predictions[name] = prediction
     
     return predictions
+
+# Function to compare models and visualize results
 def compare_models(predictions, method):
     """Compare and visualize all model predictions"""
     # Load comparison metrics from training
@@ -945,35 +982,65 @@ def main():
         data = params
 
     
-    # Generate the input form based on the selected estimation method
-    data = create_effort_input_form(method)
+    # Load history
+    history = load_history()
+
+    prefill_data = None
+    if history:
+        # Filter and sort projects by method, newest first
+        filtered_projects = [item for item in history if item['method'] == method]
+        filtered_projects.sort(key=lambda x: datetime.fromisoformat(x['timestamp']), reverse=True)
+
+        # Create options with formatted timestamps
+        options = [
+            f"{i+1}. {datetime.fromisoformat(item['timestamp']).strftime('%d-%m-%Y %Hh%M')} ({item['method']})"
+            for i, item in enumerate(filtered_projects)
+        ]
+
+        if options:
+            selected_option = st.sidebar.selectbox(f"Load input from previous {method} project", options)
+            selected_index = options.index(selected_option)
+            prefill_data = filtered_projects[selected_index]['input']
+
+    # Generate input form with possible prefill data
+    data = create_effort_input_form(method, prefill_data)
     
     # Calculate button
     if st.sidebar.button("Calculate Effort", type="primary"):
         with st.spinner('Calculating...'):
-            # Get predictions from all models
             predictions = predict_all_models(data, method)
-            
-            # Compare models and get the best prediction
             comparison_fig, best_model, best_prediction = compare_models(predictions, method)
-            
-            # Display results
             display_results(data, method)
             st.success(f"Estimation completed using {method} method!")
-            
-            # Generate PDF report using best prediction
+
+            output_data = {
+                "effort_hours": best_prediction,
+                "cost_usd": best_prediction * COST_PER_HOUR,
+                "duration_months": best_prediction / HOURS_PER_MONTH,
+                "best_model": best_model
+            }
+            save_history_entry(method, data, output_data)
+
+            # Cập nhật session_state history
+            st.session_state['history'] = load_history_cached()
+
+            # Generate and offer PDF download
             pdf = export_pdf_report(data, best_prediction, method)
-            
-            # Save PDF to bytes
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
-            
-            # Download button for PDF
             st.download_button(
                 label="Export Results (PDF)",
                 data=pdf_bytes,
                 file_name=f"effort_estimation_{method.lower()}.pdf",
                 mime="application/pdf"
             )
+
+    # Show history table in sidebar
+    with st.sidebar.expander("📜 View Project History"):
+        if history:
+            df = pd.DataFrame(history)
+            st.dataframe(df)
+        else:
+            st.info("No history found yet.")
 
 if __name__ == "__main__":
     main()
