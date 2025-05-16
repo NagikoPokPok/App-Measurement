@@ -6,6 +6,7 @@ from fpdf import FPDF
 import tempfile
 import pandas as pd
 from pathlib import Path
+from AI import ProjectAnalyzer, add_ai_analysis_section
 import math 
 
 # Set page config as the first Streamlit command
@@ -118,11 +119,63 @@ def create_effort_input_form(method):
     input_data = {}
     
     if method == 'LOC':
+        # 🟢 Bước 1: Giá trị mặc định là 0
+        default_values = {
+            'equivphyskloc': 1.0,
+            'rely': 1.0,
+            'data': 1.0,
+            'cplx': 1.0,
+            'time': 1.0,
+            'stor': 1.0,
+            'virt': 1.0,
+            'turn': 1.0,
+            'acap': 1.0,
+            'aexp': 1.0,
+            'pcap': 1.0,
+            'vexp': 1.0,
+            'lexp': 1.0,
+            'modp': 1.0,
+            'tool': 1.0,
+            'sced': 1.0
+        }
+
+        # 🟢 Bước 2: Hiển thị file uploader
+        st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
+        uploaded_file = st.sidebar.file_uploader("Chọn file Excel", type=["xlsx"])
+
+        # 🟢 Bước 3: Nếu có file, đọc và cập nhật default_values
+        if uploaded_file is not None:
+            try:
+                df = pd.read_excel(uploaded_file)
+                expected_cols = {'equivphyskloc', 'rely', 'data', 'cplx', 'time', 'stor', 'virt', 'turn', 'acap', 'aexp', 'pcap', 'vexp', 'lexp', 'modp', 'tool', 'sced'}
+                if not df.empty and expected_cols.issubset(df.columns):
+                    default_values['equivphyskloc'] = float(df['equivphyskloc'].iloc[0])
+                    default_values['rely'] = float(df['rely'].iloc[0])
+                    default_values['data'] = float(df['data'].iloc[0])
+                    default_values['cplx'] = float(df['cplx'].iloc[0])
+                    default_values['time'] = float(df['time'].iloc[0])
+                    default_values['stor'] = float(df['stor'].iloc[0])
+                    default_values['virt'] = float(df['virt'].iloc[0])
+                    default_values['turn'] = float(df['turn'].iloc[0])
+                    default_values['acap'] = float(df['acap'].iloc[0])
+                    default_values['aexp'] = float(df['aexp'].iloc[0])
+                    default_values['pcap'] = float(df['pcap'].iloc[0])
+                    default_values['vexp'] = float(df['vexp'].iloc[0])
+                    default_values['lexp'] = float(df['lexp'].iloc[0])
+                    default_values['modp'] = float(df['modp'].iloc[0])
+                    default_values['tool'] = float(df['tool'].iloc[0])
+                    default_values['sced'] = float(df['sced'].iloc[0])
+
+            except Exception as e:
+                st.sidebar.error(f"Lỗi khi đọc file: {e}")
+
+
         col1, col2 = st.sidebar.columns(2)
         
         with col1:
             # Add KLOC input field
-            input_data['equivphyskloc'] = st.number_input('KLOC (K Lines of Code)', min_value=0.1, value=50.0, step=0.1, help="Estimated thousands of lines of code")
+            input_data['equivphyskloc'] = st.number_input('KLOC (K Lines of Code)', min_value=0.1, value=default_values['equivphyskloc'], step=0.1, help="Estimated thousands of lines of code")
+
             # Add mode selection
             mode = st.selectbox('Development Mode', ['Organic', 'Semi-detached', 'Embedded'], help="Software development mode")
             # Encode mode as dummy variables
@@ -138,36 +191,37 @@ def create_effort_input_form(method):
                 input_data['mode_embedded'] = 1
                 input_data['mode_organic'] = 0
                 input_data['mode_semidetached'] = 0
-        
+             
         st.sidebar.subheader("Cost Drivers:")
         st.sidebar.markdown("#### Product Attributes")
         cost_driver_cols1 = st.sidebar.columns(2)
         
         with cost_driver_cols1[0]:
-            input_data['rely'] = st.slider('Required Reliability', 0.5, 1.65, 1.0, 0.05, help="How critical system failures are")
-            input_data['data'] = st.slider('Database Size', 0.5, 1.65, 1.0, 0.01, help="Ratio of database size to program size")
-            input_data['cplx'] = st.slider('Product Complexity', 0.5, 1.65, 1.0, 0.05, help="Complexity of the system's functions")
+            input_data['rely'] = st.number_input('Required Reliability', min_value=0.0, max_value=1.40, value=default_values['rely'], help="How critical system failures are")
+            input_data['data'] = st.number_input('Database Size', min_value=0.94, max_value=1.16, value=default_values['data'], help="Ratio of database size to program size")
+            input_data['cplx'] = st.number_input('Product Complexity', min_value=0.70, max_value=1.65, value=default_values['cplx'], help="Complexity of the system's functions")
         
         with cost_driver_cols1[1]:
-            input_data['time'] = st.slider('Time Constraint', 0.5, 1.65, 1.0, 0.01, help="Execution time constraint")
-            input_data['stor'] = st.slider('Storage Constraint',0.5, 1.65, 1.0, 0.01, help="Main storage constraint")
-            input_data['virt'] = st.slider('Platform Volatility', 0.5, 1.65, 1.0, 0.01, help="Hardware/software platform changes")
-            input_data['turn'] = st.slider('Turnaround Time', 0.5, 1.65, 1.0, 0.01, help="Development computer response time")
+            
+            input_data['time'] = st.number_input('Time Constraint', min_value=1.00, max_value=1.66, value=default_values['time'], help="Execution time constraint")
+            input_data['stor'] = st.number_input('Storage Constraint', min_value=1.00, max_value=1.56, value=default_values['stor'], help="Main storage constraint")
+            input_data['virt'] = st.number_input('Virtual Machine Volatility', min_value=0.87, max_value=1.30, value=default_values['virt'], help="Hardware/software platform changes")
+            input_data['turn'] = st.number_input('Turnaround Time', min_value=0.87, max_value=1.15, value=default_values['turn'], help="Development computer response time")
         
         st.sidebar.markdown("#### Personnel Attributes")
         cost_driver_cols2 = st.sidebar.columns(2)
         
         with cost_driver_cols2[0]:
-            input_data['acap'] = st.slider('Analyst Capability', 0.5, 1.65, 1.0, 0.01, help="Analyst team capability")
-            input_data['aexp'] = st.slider('Analyst Experience', 0.5, 1.65, 1.0, 0.01, help="Analyst experience with application")
-            input_data['pcap'] = st.slider('Programmer Capability', 0.5, 1.65, 1.0, 0.01, help="Programmer team capability")
-            input_data['vexp'] = st.slider('VM Experience', 0.5, 1.65, 1.0, 0.01, help="Virtual machine experience")
+            input_data['acap'] = st.number_input('Analyst Capability', 0.71, 1.46, value=default_values['acap'], help="Analyst team capability")
+            input_data['aexp'] = st.number_input('Analyst Experience', 0.82, 1.29, value=default_values['aexp'], help="Analyst experience with application")
+            input_data['pcap'] = st.number_input('Programmer Capability', 0.70, 1.42, value=default_values['pcap'], help="Programmer team capability")
+            input_data['vexp'] = st.number_input('VM Experience', 0.90, 1.21, value=default_values['vexp'], help="Virtual machine experience")
         
         with cost_driver_cols2[1]:
-            input_data['lexp'] = st.slider('Language Experience', 0.5, 1.65, 1.0, 0.01, help="Programming language experience")
-            input_data['modp'] = st.slider('Modern Practices', 0.5, 1.65, 1.0, 0.01, help="Use of modern programming practices")
-            input_data['tool'] = st.slider('Software Tools', 0.5, 1.65, 1.0, 0.01, help="Use of software tools")
-            input_data['sced'] = st.slider('Schedule Constraint', 0.5, 1.65, 1.0, 0.01, help="Required development schedule")
+            input_data['lexp'] = st.number_input('Language Experience', 0.95, 1.14, value=default_values['lexp'], help="Programming language experience")
+            input_data['modp'] = st.number_input('Modern Practices', 0.82, 1.24, value=default_values['modp'], help="Use of modern programming practices")
+            input_data['tool'] = st.number_input('Software Tools', 0.83, 1.24, value=default_values['tool'], help="Use of software tools")
+            input_data['sced'] = st.number_input('Schedule Constraint', 1.00, 1.23, value=default_values['sced'], help="Required development schedule")
             
         # Calculate EAF (Effort Adjustment Factor)
         input_data['eaf'] = (input_data['rely'] * input_data['data'] * input_data['cplx'] * 
@@ -177,107 +231,159 @@ def create_effort_input_form(method):
                              input_data['modp'] * input_data['tool'] * input_data['sced'])
     
     elif method == 'FP':
-        # Function Point components
+        # 🟢 Bước 1: Giá trị mặc định là 0
+        default_values = {
+            'AFP': 0.0,
+            'EI': 0,
+            'EO': 0,
+            'EQ': 0,
+            'ELF': 0,
+            'IFL': 0,
+            'PDR_AFP': 0.0,
+            'PDR_UFP': 0.0,
+            'NPDR_AFP': 0.0,
+            'NPDU_UFP': 0.0
+            
+        }
+
+        # 🟢 Bước 2: Hiển thị file uploader
+        st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
+        uploaded_file = st.sidebar.file_uploader("Chọn file Excel", type=["xlsx"])
+
+        # 🟢 Bước 3: Nếu có file, đọc và cập nhật default_values
+        if uploaded_file is not None:
+            try:
+                df = pd.read_excel(uploaded_file)
+                expected_cols = {'AFP', 'EI', 'EO', 'EQ', 'ELF', 'IFL', 'PDR_AFP', 'PDR_UFP', 'NPDR_AFP', 'NPDU_UFP'}
+                if not df.empty and expected_cols.issubset(df.columns):
+                    default_values['AFP'] = float(df['AFP'].iloc[0])
+                    default_values['EI'] = int(df['EI'].iloc[0])
+                    default_values['EO'] = int(df['EO'].iloc[0])
+                    default_values['EQ'] = int(df['EQ'].iloc[0])
+                    default_values['ELF'] = int(df['ELF'].iloc[0])
+                    default_values['IFL'] = int(df['IFL'].iloc[0])
+                    default_values['PDR_AFP'] = float(df['PDR_AFP'].iloc[0])
+                    default_values['PDR_UFP'] = float(df['PDR_UFP'].iloc[0])
+                    default_values['NPDR_AFP'] = float(df['NPDR_AFP'].iloc[0])
+                    default_values['NPDU_UFP'] = float(df['NPDU_UFP'].iloc[0])
+            except Exception as e:
+                st.sidebar.error(f"Lỗi khi đọc file: {e}")
+
+        # 🟢 Bước 4: Hiển thị các input với giá trị đã có (0 hoặc từ file)
         st.sidebar.subheader("Function Point Components:")
         col1, col2 = st.sidebar.columns(2)
 
         with col1:
-            input_data['AFP'] = st.number_input('AFP (Adjusted Function Points)', min_value=0.0, value=1.0, help="Adjusted Function Points")
-            input_data['Input'] = st.number_input('Input Count', min_value=0, value=30, help="Number of user inputs")
-            input_data['Output'] = st.number_input('Output Count', min_value=0, value=25, help="Number of user outputs")
-            input_data['Enquiry'] = st.number_input('Enquiry Count', min_value=0, value=15, help="Number of user enquiries")
+            input_data['AFP'] = st.number_input('AFP (Adjusted Function Points)', min_value=0.0, value=default_values['AFP'], help="Adjusted Function Points")
+            input_data['Input'] = st.number_input('Input Count (EI)', min_value=0, value=default_values['EI'], help="Number of user inputs")
+            input_data['Output'] = st.number_input('Output Count (EO)', min_value=0, value=default_values['EO'], help="Number of user outputs")
+            input_data['Enquiry'] = st.number_input('Enquiry Count (EQ)', min_value=0, value=default_values['EQ'], help="Number of user enquiries")
 
         with col2:
-            input_data['File'] = st.number_input('File Count', min_value=0, value=10, help="Number of files")
-            input_data['Interface'] = st.number_input('Interface Count', min_value=0, value=5, help="Number of external interfaces")
+            input_data['File'] = st.number_input('File Count (ELF)', min_value=0, value=default_values['ELF'], help="Number of files")
+            input_data['Interface'] = st.number_input('Interface Count (IFL)', min_value=0, value=default_values['IFL'], help="Number of external interfaces")
         
         # Productivity factors
         st.sidebar.subheader("Productivity Factors:")
-        input_data['PDR_AFP'] = st.number_input('PDR_AFP (Productivity Derived from AFP)', min_value=0.0, value=1.0, help="Productivity derived from Adjusted Function Points")
-        input_data['PDR_UFP'] = st.number_input('PDR_UFP (Productivity Derived from UFP)', min_value=0.0, value=1.0, help="Productivity derived from Unadjusted Function Points")
-        input_data['NPDR_AFP'] = st.number_input('NPDR_AFP (Non-Productivity Derived from AFP)', min_value=0.0, value=0.5, help="Non-productivity derived from Adjusted Function Points")
-        input_data['NPDU_UFP'] = st.number_input('NPDU_UFP (Non-Productivity Derived from UFP)', min_value=0.0, value=0.5, help="Non-productivity derived from Unadjusted Function Points")
+        input_data['PDR_AFP'] = st.sidebar.number_input('PDR_AFP (Productivity Derived from AFP)', min_value=0.0, value=default_values['PDR_AFP'], help="Productivity derived from Adjusted Function Points")
+        input_data['PDR_UFP'] = st.sidebar.number_input('PDR_UFP (Productivity Derived from UFP)', min_value=0.0, value=default_values['PDR_UFP'], help="Productivity derived from Unadjusted Function Points")
+        input_data['NPDR_AFP'] = st.sidebar.number_input('NPDR_AFP (Non-Productivity Derived from AFP)', min_value=0.0, value=default_values['NPDR_AFP'], help="Non-productivity derived from Adjusted Function Points")
+        input_data['NPDU_UFP'] = st.sidebar.number_input('NPDU_UFP (Non-Productivity Derived from UFP)', min_value=0.0, value=default_values['NPDU_UFP'], help="Non-productivity derived from Unadjusted Function Points")
+
     
     elif method == 'UCP':
-        # Collect actor counts
+        # 🟢 Bước 1: Giá trị mặc định
+        default_values = {
+            'Simple Actors': 0,
+            'Average Actors': 0,
+            'Complex Actors': 0,
+            'Simple UC': 0,
+            'Average UC': 0,
+            'Complex UC': 0,
+            'TCF': 1.0,
+            'ECF': 1.0,
+            'Language': 'Java',
+            'Methodology': 'Waterfall',
+            'ApplicationType': 'Business Application'
+        }
+
+        # 🟢 Bước 2: Hiển thị file uploader
+        st.sidebar.markdown("### (Tùy chọn) Tải dữ liệu từ file Excel")
+        uploaded_file = st.sidebar.file_uploader("Chọn file Excel", type=["xlsx"])
+
+        if uploaded_file is not None:
+            try:
+                df = pd.read_excel(uploaded_file)
+                expected_cols = set(default_values.keys())
+                if not df.empty and expected_cols.issubset(df.columns):
+                    for key in default_values:
+                        default_values[key] = df[key].iloc[0]
+            except Exception as e:
+                st.sidebar.error(f"Lỗi khi đọc file: {e}")
+
+        # 🟢 Bước 3: Hiển thị các input trong sidebar
+        input_data = {}
+
         st.sidebar.subheader("Actors:")
-        col1 = st.sidebar.columns(1)[0]  # Get first column from list
-        
-        with col1:
-            simple_actors = st.number_input('Simple Actors', min_value=0, value=3, help="Count of simple actors")
-            average_actors = st.number_input('Average Actors', min_value=0, value=4, help="Count of average actors")
-            complex_actors = st.number_input('Complex Actors', min_value=0, value=2, help="Count of complex actors")
-        
-        # Collect use case counts
+        input_data['Simple Actors'] = st.sidebar.number_input(
+            'Simple Actors', min_value=0, value=int(default_values['Simple Actors']), help="Count of simple actors")
+        input_data['Average Actors'] = st.sidebar.number_input(
+            'Average Actors', min_value=0, value=int(default_values['Average Actors']), help="Count of average actors")
+        input_data['Complex Actors'] = st.sidebar.number_input(
+            'Complex Actors', min_value=0, value=int(default_values['Complex Actors']), help="Count of complex actors")
+
         st.sidebar.subheader("Use Cases:")
-        col1 = st.sidebar.columns(1)[0]  # Get first column from list
-        
-        with col1:
-            simple_uc = st.number_input('Simple Use Cases', min_value=0, value=6, help="Count of simple use cases")
-            average_uc = st.number_input('Average Use Cases', min_value=0, value=8, help="Count of average use cases")
-            complex_uc = st.number_input('Complex Use Cases', min_value=0, value=4, help="Count of complex use cases")
-        
-        # Technical and Environmental factors
+        input_data['Simple UC'] = st.sidebar.number_input(
+            'Simple Use Cases', min_value=0, value=int(default_values['Simple UC']), help="Count of simple use cases")
+        input_data['Average UC'] = st.sidebar.number_input(
+            'Average Use Cases', min_value=0, value=int(default_values['Average UC']), help="Count of average use cases")
+        input_data['Complex UC'] = st.sidebar.number_input(
+            'Complex Use Cases', min_value=0, value=int(default_values['Complex UC']), help="Count of complex use cases")
+
         st.sidebar.subheader("Complexity Factors:")
         col1, col2 = st.sidebar.columns(2)
-        
         with col1:
-            tcf = st.number_input(
-                'Technical Complexity Factor (TCF)', 
-                min_value=0.0,  # Changed to float
-                max_value=5.0,  # Added max value
-                value=0.6,      # Default value
-                step=0.1,       # Decimal step
-                format="%.5f",  # Show 5 decimal places
-                help="Technical complexity factor"
+            input_data['TCF'] = st.number_input(
+                'Technical Complexity Factor (TCF)',
+                min_value=0.0, max_value=5.0, value=float(default_values['TCF']),
+                step=0.1, format="%.5f", help="Technical complexity factor"
             )
-    
-    
         with col2:
-            ecf = st.number_input(
+            input_data['ECF'] = st.number_input(
                 'Environmental Complexity Factor (ECF)',
-                min_value=0.0,  # Changed to float
-                max_value=5.0,  # Added max value
-                value=0.6,      # Default value
-                step=0.1,       # Decimal step
-                format="%.5f",  # Show 5 decimal places
-                help="Environmental complexity factor"
+                min_value=0.0, max_value=5.0, value=float(default_values['ECF']),
+                step=0.1, format="%.5f", help="Environmental complexity factor"
             )
-            
-        # Save raw inputs for model
-        input_data['Simple Actors'] = simple_actors
-        input_data['Average Actors'] = average_actors  
-        input_data['Complex Actors'] = complex_actors
-        input_data['Simple UC'] = simple_uc
-        input_data['Average UC'] = average_uc
-        input_data['Complex UC'] = complex_uc
-        
-        # Calculate UAW and UUCW
-        input_data['UAW'] = simple_actors * 1 + average_actors * 2 + complex_actors * 3
-        input_data['UUCW'] = simple_uc * 5 + average_uc * 10 + complex_uc * 15
-        input_data['TCF'] = tcf
-        input_data['ECF'] = ecf
-        
-        # Calculate UCP and add productivity factor (default is 20 person-hours per UCP)
-        input_data['UCP'] = (input_data['UAW'] + input_data['UUCW']) * tcf * ecf
-        input_data['Real_P20'] = 20
-        
-        # Development environment selection
+
+        # 🟢 Bước 4: Tính toán UAW, UUCW, UCP
+        input_data['UAW'] = (
+            input_data['Simple Actors'] * 1 +
+            input_data['Average Actors'] * 2 +
+            input_data['Complex Actors'] * 3
+        )
+        input_data['UUCW'] = (
+            input_data['Simple UC'] * 5 +
+            input_data['Average UC'] * 10 +
+            input_data['Complex UC'] * 15
+        )
+        input_data['UCP'] = (input_data['UAW'] + input_data['UUCW']) * input_data['TCF'] * input_data['ECF']
+        input_data['Real_P20'] = 20  # default
+
+        # 🟢 Bước 5: Các lựa chọn dạng dropdown (selectbox)
         st.sidebar.subheader("Development Environment:")
-        language = st.sidebar.selectbox('Programming Language', 
-                                      ['Java', 'C#', 'C++', 'Visual Basic', 'Other'], 
-                                      index=0)
-        methodology = st.sidebar.selectbox('Methodology',
-                                         ['Waterfall', 'Agile', 'Incremental', 'Rapid Application Development', 'Other'],
-                                         index=0)
-        app_type = st.sidebar.selectbox('Application Type',
-                                      ['Business Application', 'Real-Time Application', 'Mathematically-Intensive Application', 'Other'],
-                                      index=0)
-        
-        # Save these values
-        input_data['Language'] = language
-        input_data['Methodology'] = methodology
-        input_data['ApplicationType'] = app_type
+
+        language_options = ['Java', 'C#', 'C++', 'Visual Basic', 'Other']
+        methodology_options = ['Waterfall', 'Agile', 'Incremental', 'Rapid Application Development', 'Other']
+        app_type_options = ['Business Application', 'Real-Time Application', 'Mathematically-Intensive Application', 'Other']
+
+        # Lấy index tương ứng từ giá trị file Excel hoặc dùng index 0 mặc định
+        language_index = language_options.index(default_values['Language']) if default_values['Language'] in language_options else 0
+        methodology_index = methodology_options.index(default_values['Methodology']) if default_values['Methodology'] in methodology_options else 0
+        app_type_index = app_type_options.index(default_values['ApplicationType']) if default_values['ApplicationType'] in app_type_options else 0
+
+        input_data['Language'] = st.sidebar.selectbox('Programming Language', language_options, index=language_index)
+        input_data['Methodology'] = st.sidebar.selectbox('Methodology', methodology_options, index=methodology_index)
+        input_data['ApplicationType'] = st.sidebar.selectbox('Application Type', app_type_options, index=app_type_index)
 
     return input_data
 
@@ -508,7 +614,6 @@ def convert_to_months_days(months):
         return f"{full_months} months"
     else:
         return f"{full_months} months {remaining_days} days"
-
 
 # Display results
 def display_results(pred_effort, method):
@@ -829,9 +934,16 @@ def main():
     # Select model in sidebar
     method = st.sidebar.selectbox("Select Estimation Method", ["LOC", "FP", "UCP"])
     
-    # Show method information
-    with st.expander("About this estimation method", expanded=False):
-        st.markdown(METHOD_INFO[method])
+    result = add_ai_analysis_section(st)
+    if result is None:
+        method_suggestion, params = None, None
+    else:
+        method_suggestion, params = result
+
+    if method_suggestion and params:
+        method = method_suggestion
+        data = params
+
     
     # Generate the input form based on the selected estimation method
     data = create_effort_input_form(method)
