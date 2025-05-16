@@ -1,0 +1,602 @@
+[
+  {
+    "timestamp": "2025-05-15T15:39:57.265164",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 259.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T15:41:03.658725",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 258.5999999999999,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.13,
+      "data": 0.99,
+      "cplx": 1.14,
+      "time": 1.03,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.9282885046586751
+    },
+    "output": {
+      "effort_hours": 933.6869472308647,
+      "cost_usd": 46684.34736154324,
+      "duration_months": 5.835543420192904,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T15:41:55.044578",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 1.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.0,
+      "data": 1.0,
+      "cplx": 1.0,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 1.0,
+      "turn": 1.0,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 1.0,
+      "modp": 1.0,
+      "tool": 1.0,
+      "sced": 1.0,
+      "eaf": 1.0
+    },
+    "output": {
+      "effort_hours": 51.68370982693147,
+      "cost_usd": 2584.1854913465736,
+      "duration_months": 0.3230231864183217,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T18:54:12.762695",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 1.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.0,
+      "data": 1.0,
+      "cplx": 1.0,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 1.0,
+      "turn": 1.0,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 1.0,
+      "modp": 1.0,
+      "tool": 1.0,
+      "sced": 1.0,
+      "eaf": 1.0
+    },
+    "output": {
+      "effort_hours": 51.68370982693147,
+      "cost_usd": 2584.1854913465736,
+      "duration_months": 0.3230231864183217,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T21:38:00.361926",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 1.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.0,
+      "data": 1.0,
+      "cplx": 1.0,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 1.0,
+      "turn": 1.0,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 1.0,
+      "modp": 1.0,
+      "tool": 1.0,
+      "sced": 1.0,
+      "eaf": 1.0
+    },
+    "output": {
+      "effort_hours": 51.68370982693147,
+      "cost_usd": 2584.1854913465736,
+      "duration_months": 0.3230231864183217,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T21:46:05.331380",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 1.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.0,
+      "data": 1.0,
+      "cplx": 1.0,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 1.0,
+      "turn": 1.0,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 1.0,
+      "modp": 1.0,
+      "tool": 1.0,
+      "sced": 1.0,
+      "eaf": 1.0
+    },
+    "output": {
+      "effort_hours": 51.68370982693147,
+      "cost_usd": 2584.1854913465736,
+      "duration_months": 0.3230231864183217,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:03:16.146418",
+    "method": "FP",
+    "input": {
+      "AFP": 45.56,
+      "Input": 30,
+      "Output": 25,
+      "Enquiry": 15,
+      "File": 10,
+      "Interface": 5,
+      "PDR_AFP": 4.7,
+      "PDR_UFP": 5.0,
+      "NPDR_AFP": 4.7,
+      "NPDU_UFP": 5.0
+    },
+    "output": {
+      "effort_hours": 284.6702706464498,
+      "cost_usd": 14233.51353232249,
+      "duration_months": 1.7791891915403113,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:04:23.571759",
+    "method": "UCP",
+    "input": {
+      "Simple Actors": 1,
+      "Average Actors": 2,
+      "Complex Actors": 1,
+      "Simple UC": 1,
+      "Average UC": 10,
+      "Complex UC": 16,
+      "TCF": 0.9,
+      "ECF": 0.91,
+      "UAW": 8,
+      "UUCW": 345,
+      "UCP": 289.107,
+      "Real_P20": 20,
+      "Language": "C#",
+      "Methodology": "Agile",
+      "ApplicationType": "Business Application"
+    },
+    "output": {
+      "effort_hours": 7621.52527577155,
+      "cost_usd": 381076.2637885775,
+      "duration_months": 47.634532973572185,
+      "best_model": "decision_tree"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:07:10.513830",
+    "method": "FP",
+    "input": {
+      "AFP": 45.56,
+      "Input": 30,
+      "Output": 25,
+      "Enquiry": 15,
+      "File": 10,
+      "Interface": 5,
+      "PDR_AFP": 4.7,
+      "PDR_UFP": 5.0,
+      "NPDR_AFP": 4.7,
+      "NPDU_UFP": 5.0
+    },
+    "output": {
+      "effort_hours": 284.6702706464498,
+      "cost_usd": 14233.51353232249,
+      "duration_months": 1.7791891915403113,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:07:49.688209",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 1.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.0,
+      "data": 1.0,
+      "cplx": 1.0,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 1.0,
+      "turn": 1.0,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 1.0,
+      "modp": 1.0,
+      "tool": 1.0,
+      "sced": 1.0,
+      "eaf": 1.0
+    },
+    "output": {
+      "effort_hours": 51.68370982693147,
+      "cost_usd": 2584.1854913465736,
+      "duration_months": 0.3230231864183217,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:09:04.640854",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 259.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:10:10.031264",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 359.4,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:11:39.535632",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 459.4,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:12:51.351005",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 459.0,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:19:56.195110",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 460.4000000000003,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:22:19.998571",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 560.4,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:24:13.214322",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 660.4,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:26:19.747108",
+    "method": "LOC",
+    "input": {
+      "equivphyskloc": 760.4,
+      "mode_embedded": 0,
+      "mode_organic": 1,
+      "mode_semidetached": 0,
+      "rely": 1.15,
+      "data": 0.94,
+      "cplx": 1.15,
+      "time": 1.0,
+      "stor": 1.0,
+      "virt": 0.87,
+      "turn": 0.87,
+      "acap": 1.0,
+      "aexp": 1.0,
+      "pcap": 1.0,
+      "vexp": 1.0,
+      "lexp": 0.95,
+      "modp": 0.91,
+      "tool": 1.0,
+      "sced": 1.08,
+      "eaf": 0.8785182598100998
+    },
+    "output": {
+      "effort_hours": 1018.9987087769204,
+      "cost_usd": 50949.93543884602,
+      "duration_months": 6.368741929855752,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:41:06.757094",
+    "method": "FP",
+    "input": {
+      "AFP": 45.490000000000016,
+      "Input": 25,
+      "Output": 21,
+      "Enquiry": 15,
+      "File": 13,
+      "Interface": 7,
+      "PDR_AFP": 4.7,
+      "PDR_UFP": 5.0,
+      "NPDR_AFP": 4.7,
+      "NPDU_UFP": 5.0
+    },
+    "output": {
+      "effort_hours": 278.77484574940735,
+      "cost_usd": 13938.742287470368,
+      "duration_months": 1.7423427859337959,
+      "best_model": "gradient_boosting"
+    }
+  },
+  {
+    "timestamp": "2025-05-15T22:42:33.929709",
+    "method": "UCP",
+    "input": {
+      "Simple Actors": 6,
+      "Average Actors": 2,
+      "Complex Actors": 1,
+      "Simple UC": 1,
+      "Average UC": 10,
+      "Complex UC": 16,
+      "TCF": 0.9,
+      "ECF": 0.91,
+      "UAW": 13,
+      "UUCW": 345,
+      "UCP": 293.202,
+      "Real_P20": 20,
+      "Language": "C#",
+      "Methodology": "Agile",
+      "ApplicationType": "Business Application"
+    },
+    "output": {
+      "effort_hours": 7621.52527577155,
+      "cost_usd": 381076.2637885775,
+      "duration_months": 47.634532973572185,
+      "best_model": "decision_tree"
+    }
+  }
+]
