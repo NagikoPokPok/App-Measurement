@@ -9,8 +9,10 @@ import pandas as pd
 from fpdf import FPDF
 from pathlib import Path
 from datetime import datetime
-from AI import ProjectAnalyzer, add_ai_analysis_section
-from history_manager import load_history, load_history_cached, save_history_entry
+from AI import add_ai_analysis_section
+from history_manager import HistoryManager
+
+history_manager = HistoryManager()
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Software Project Effort Estimation Tool", layout="wide")
@@ -983,24 +985,33 @@ def main():
 
     
     # Load history
-    history = load_history()
-
+    history = history_manager.load_history()
     prefill_data = None
+    filtered_projects = []  # Initialize với list rỗng
+
     if history:
-        # Filter and sort projects by method, newest first
-        filtered_projects = [item for item in history if item['method'] == method]
-        filtered_projects.sort(key=lambda x: datetime.fromisoformat(x['timestamp']), reverse=True)
+        # Filter và sort projects theo method, mới nhất trước
+        filtered_projects = history_manager.load_history_filtered(
+            method=method,
+            limit=10  # Chỉ lấy 10 entry gần nhất
+        )
 
-        # Create options with formatted timestamps
-        options = [
-            f"{i+1}. {datetime.fromisoformat(item['timestamp']).strftime('%d-%m-%Y %Hh%M')} ({item['method']})"
-            for i, item in enumerate(filtered_projects)
-        ]
+    if filtered_projects:
+            # Create options với timestamps được format
+            options = ["None"] + [
+                f"{item['id']}. {datetime.fromisoformat(item['timestamp']).strftime('%d-%m-%Y %Hh%M')} ({item['method']})"
+                for item in filtered_projects
+            ]
 
-        if options:
-            selected_option = st.sidebar.selectbox(f"Load input from previous {method} project", options)
-            selected_index = options.index(selected_option)
-            prefill_data = filtered_projects[selected_index]['input']
+            selected_option = st.sidebar.selectbox(
+                f"Load input from previous {method} project", 
+                options,
+                index=0  # Default to "None"
+            )
+
+            if selected_option != "None":
+                selected_index = options.index(selected_option) - 1  # Adjust for "None" option
+                prefill_data = filtered_projects[selected_index]['input']
 
     # Generate input form with possible prefill data
     data = create_effort_input_form(method, prefill_data)
@@ -1019,11 +1030,60 @@ def main():
                 "duration_months": best_prediction / HOURS_PER_MONTH,
                 "best_model": best_model
             }
-            save_history_entry(method, data, output_data)
 
-            # Cập nhật session_state history
-            st.session_state['history'] = load_history_cached()
+            history_manager.save_history_entry(
+                method=method,
+                input_data=data,
+                output_data=output_data,
+                tags=["production", method.lower()]
+            )
 
+            # Hiển thị history với nhiều tùy chọn hơn
+    with st.sidebar.expander("📜 Project History"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            filter_method = st.selectbox(
+                "Filter by method",
+                ["All"] + ["LOC", "FP", "UCP"]
+            )
+            
+        with col2:
+            days = st.number_input("Days to show", 1, 365, 30)
+            
+        method_filter = None if filter_method == "All" else filter_method
+        start_date = (datetime.now() - pd.Timedelta(days=days)).isoformat()
+        
+        filtered_history = history_manager.load_history_filtered(
+            method=method_filter,
+            start_date=start_date
+        )
+        
+        if filtered_history:
+            df = pd.DataFrame(filtered_history)
+            st.dataframe(df)
+            
+            # Export options
+            export_format = st.selectbox(
+                "Export format",
+                ["json", "csv", "excel"]
+            )
+            
+            if st.button("Export History"):
+                exported_data = history_manager.export_history(export_format)
+                if exported_data:
+                    st.download_button(
+                        "Download",
+                        exported_data,
+                        f"history.{export_format}",
+                        "text/plain"
+                    )
+        else:
+            st.info("No history found for selected filters.")
+
+    # Move PDF export outside of history section and wrap in try-except
+    try:
+        if 'best_prediction' in locals():  # Check if best_prediction exists
             # Generate and offer PDF download
             pdf = export_pdf_report(data, best_prediction, method)
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
@@ -1033,14 +1093,8 @@ def main():
                 file_name=f"effort_estimation_{method.lower()}.pdf",
                 mime="application/pdf"
             )
-
-    # Show history table in sidebar
-    with st.sidebar.expander("📜 View Project History"):
-        if history:
-            df = pd.DataFrame(history)
-            st.dataframe(df)
-        else:
-            st.info("No history found yet.")
+    except Exception as e:
+        st.warning("Please calculate effort first before exporting PDF report.")
 
 if __name__ == "__main__":
     main()
